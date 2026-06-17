@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Provider Ai-Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Multi-Provider Chat</title>
+    
+    <!-- PWA Meta Tags & Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a84ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <style>
         :root {
             --bg: #f5f5f5;
@@ -143,7 +150,6 @@
         function updateUI() {
             document.getElementById('status-badge').innerText = `Provider: ${config.provider}`;
             document.getElementById('provider-select').value = config.provider;
-            // Update modal fields
             if (config.provider === 'anthropic') {
                 document.getElementById('base-url').value = 'https://api.anthropic.com/v1';
                 document.getElementById('model-name').value = 'claude-3-5-sonnet-20240620';
@@ -181,8 +187,7 @@
             isProcessing = true;
 
             try {
-                // Prepare message list
-                // Remove 'system' role for local providers (Gemma/Ollama) to prevent empty response
+                // CRITICAL FIX: Remove 'system' role for local providers (Gemma/Ollama) to prevent empty response
                 let msgs = messages.filter(m => m.role !== 'system');
                 let responseText = "";
 
@@ -193,7 +198,7 @@
                         max_tokens: 1024,
                         messages: msgs
                     };
-                    // Extract system message if present
+                    // Re-insert system message specifically for Anthropic
                     const sysMsg = messages.find(m => m.role === 'system');
                     if (sysMsg) body.system = sysMsg.content;
 
@@ -289,7 +294,6 @@
             closeSettings();
         }
 
-        // ⚠️ CORS CHECK & TESTING
         async function testConnection() {
             const btn = document.querySelector('.btn-secondary');
             const originalText = btn.innerText;
@@ -299,10 +303,9 @@
             try {
                 const provider = document.getElementById('provider-select').value;
                 if (provider === 'anthropic') {
-                    // Check if key exists
                     const key = document.getElementById('api-key').value;
                     if (!key) throw new Error("API Key required for Anthropic");
-                    alert("✅ Anthropic API key seems valid (we don't call the API to save credits).");
+                    alert("✅ Anthropic API key seems valid.");
                 } else {
                     const url = document.getElementById('base-url').value;
                     const resp = await fetch(`${url}/models`);
@@ -320,10 +323,18 @@
 
         // Initialize
         loadConfig();
-        // Close modal on outside click
         document.getElementById('settings-modal').addEventListener('click', function(e) {
             if (e.target === this) closeSettings();
         });
+
+        // Service Worker Registration for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                .then(() => console.log('PWA Service Worker registered successfully!'))
+                .catch((err) => console.log('PWA registration failed:', err));
+            });
+        }
     </script>
 </body>
 </html>
