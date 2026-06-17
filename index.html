@@ -217,7 +217,9 @@
 
                 } else {
                     // OpenAI compatible (Ollama / Gemma)
-                    const resp = await fetch(`${config.base_url}/chat/completions`, {
+                    const proxyUrl = 'https://corsproxy.io/?';
+                    const targetUrl = `${config.base_url}/chat/completions`;
+                    const resp = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -299,6 +301,7 @@
             const originalText = btn.innerText;
             btn.innerText = 'Testing...';
             btn.disabled = true;
+            const proxyUrl = 'https://corsproxy.io/?';
 
             try {
                 const provider = document.getElementById('provider-select').value;
@@ -308,7 +311,7 @@
                     alert("✅ Anthropic API key seems valid.");
                 } else {
                     const url = document.getElementById('base-url').value;
-                    const resp = await fetch(`${url}/models`);
+                    const resp = await fetch(proxyUrl + encodeURIComponent(`${url}/models`));
                     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                     const data = await resp.json();
                     alert(`✅ Connected successfully! Found ${data.data.length} model(s).`);
