@@ -5,34 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Multi-Provider Chat</title>
     
+    <!-- PWA Meta Tags & Manifest -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a84ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <style>
-        :root { --bg: #f5f5f5; --card-bg: #fff; --user-bubble: #007bff; --assistant-bubble: #e9ecef; --text: #333; --input-bg: #fff; --shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        :root {
+            --bg: #f5f5f5;
+            --card-bg: #fff;
+            --user-bubble: #007bff;
+            --assistant-bubble: #e9ecef;
+            --text: #333;
+            --input-bg: #fff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Header */
         header { background: var(--card-bg); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; box-shadow: var(--shadow); }
         header h1 { font-size: 20px; color: var(--text); }
         .header-actions button { background: none; border: none; font-size: 18px; cursor: pointer; color: #555; padding: 5px 10px; border-radius: 5px; transition: 0.2s; }
         .header-actions button:hover { background: #eee; }
+
+        /* Chat Area */
         #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
         .message { max-width: 75%; padding: 12px 16px; border-radius: 18px; line-height: 1.5; position: relative; word-wrap: break-word; }
         .message.user { align-self: flex-end; background: var(--user-bubble); color: white; border-bottom-right-radius: 4px; }
         .message.assistant { align-self: flex-start; background: var(--assistant-bubble); color: var(--text); border-bottom-left-radius: 4px; }
         .message.system { align-self: center; background: #f8d7da; color: #721c24; border-radius: 8px; font-size: 14px; max-width: 90%; text-align: center; }
+
+        /* Thinking Dots */
         .thinking-indicator { align-self: flex-start; background: var(--assistant-bubble); padding: 12px 16px; border-radius: 18px; border-bottom-left-radius: 4px; display: none; margin-bottom: 10px; }
         .dot { display: inline-block; width: 8px; height: 8px; background: #888; border-radius: 50%; margin: 0 2px; animation: bounce 1.4s infinite ease-in-out both; }
         .dot:nth-child(1) { animation-delay: -0.32s; }
         .dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        /* Input Area */
         .input-area { background: var(--card-bg); padding: 15px 20px; display: flex; gap: 12px; border-top: 1px solid #ddd; }
         .input-area input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 25px; outline: none; font-size: 16px; background: var(--input-bg); }
         .input-area input:focus { border-color: var(--user-bubble); }
         .input-area button { padding: 0 25px; background: var(--user-bubble); color: white; border: none; border-radius: 25px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .input-area button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Modal */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal h2 { margin-bottom: 20px; }
@@ -41,6 +60,7 @@
         .modal .btn-group { display: flex; gap: 10px; margin-top: 15px; justify-content: flex-end; }
         .modal .btn-primary { background: var(--user-bubble); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
         .modal .btn-secondary { background: #eee; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+
         @media (prefers-color-scheme: dark) {
             :root { --bg: #1a1a1a; --card-bg: #2c2c2c; --user-bubble: #0a84ff; --assistant-bubble: #3a3a3a; --text: #f0f0f0; --input-bg: #3a3a3a; --shadow: 0 4px 12px rgba(0,0,0,0.5); }
             .modal { background: #2c2c2c; color: white; }
@@ -60,9 +80,11 @@
     </header>
 
     <div id="chat-container">
+        <!-- Chat messages will be injected here -->
         <div class="message system">System ready. Type a message to start.</div>
     </div>
 
+    <!-- Thinking Dots -->
     <div class="thinking-indicator" id="thinking-indicator">
         <span class="dot"></span><span class="dot"></span><span class="dot"></span>
     </div>
@@ -72,6 +94,7 @@
         <button id="send-btn" onclick="sendMessage()">Send</button>
     </div>
 
+    <!-- Settings Modal -->
     <div class="modal-overlay" id="settings-modal">
         <div class="modal">
             <h2>Settings</h2>
@@ -97,6 +120,7 @@
     </div>
 
     <script>
+        // State Management
         let config = {
             provider: "gemma",
             base_url: "http://127.0.0.1:1234/v1",
@@ -107,6 +131,7 @@
         let messages = [];
         let isProcessing = false;
 
+        // Load from localStorage
         function loadConfig() {
             const saved = localStorage.getItem('chatConfig');
             if (saved) {
@@ -138,6 +163,7 @@
             }
         }
 
+        // Chat Functions
         function addMessage(role, content) {
             const container = document.getElementById('chat-container');
             const div = document.createElement('div');
@@ -190,8 +216,7 @@
                     responseText = data.content[0].text;
 
                 } else {
-                    // ✅ ULTRA-RELIABLE CORS PROXY (api.codetabs.com)
-                    const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
+                    const proxyUrl = 'https://corsproxy.io/?';
                     const targetUrl = `${config.base_url}/chat/completions`;
                     
                     const resp = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
@@ -203,14 +228,7 @@
                             stream: false
                         })
                     });
-                    
-                    // Check if the response is HTML (which means the proxy failed)
-                    const textData = await resp.text();
-                    if (textData.trim().startsWith('<!DOCTYPE')) {
-                        throw new Error('The proxy server returned an HTML error page. Please try again in a few minutes.');
-                    }
-                    
-                    const data = JSON.parse(textData);
+                    const data = await resp.json();
                     if (!resp.ok) throw new Error(data.error?.message || 'API Error');
                     if (!data.choices || data.choices.length === 0) {
                         throw new Error('Received an empty response from the model.');
@@ -229,6 +247,7 @@
             }
         }
 
+        // Settings Modal Logic
         function openSettings() {
             document.getElementById('settings-modal').style.display = 'flex';
             updateFields();
@@ -291,8 +310,7 @@
             const originalText = btn.innerText;
             btn.innerText = 'Testing...';
             btn.disabled = true;
-            // ✅ ULTRA-RELIABLE CORS PROXY
-            const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
+            const proxyUrl = 'https://corsproxy.io/?';
 
             try {
                 const provider = document.getElementById('provider-select').value;
@@ -303,12 +321,8 @@
                 } else {
                     const url = document.getElementById('base-url').value;
                     const resp = await fetch(proxyUrl + encodeURIComponent(`${url}/models`));
-                    const textData = await resp.text();
-                    if (textData.trim().startsWith('<!DOCTYPE')) {
-                        throw new Error('The proxy server returned an HTML error page. Please try again in a few minutes.');
-                    }
-                    const data = JSON.parse(textData);
                     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    const data = await resp.json();
                     alert(`✅ Connected successfully! Found ${data.data.length} model(s).`);
                 }
             } catch (err) {
@@ -319,11 +333,13 @@
             }
         }
 
+        // Initialize
         loadConfig();
         document.getElementById('settings-modal').addEventListener('click', function(e) {
             if (e.target === this) closeSettings();
         });
 
+        // Service Worker Registration for PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
