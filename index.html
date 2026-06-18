@@ -190,8 +190,8 @@
                     responseText = data.content[0].text;
 
                 } else {
-                    // ✅ ULTRA-STABLE CORS PROXY
-                    const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                    // ✅ ULTRA-RELIABLE CORS PROXY (api.codetabs.com)
+                    const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
                     const targetUrl = `${config.base_url}/chat/completions`;
                     
                     const resp = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
@@ -203,7 +203,14 @@
                             stream: false
                         })
                     });
-                    const data = await resp.json();
+                    
+                    // Check if the response is HTML (which means the proxy failed)
+                    const textData = await resp.text();
+                    if (textData.trim().startsWith('<!DOCTYPE')) {
+                        throw new Error('The proxy server returned an HTML error page. Please try again in a few minutes.');
+                    }
+                    
+                    const data = JSON.parse(textData);
                     if (!resp.ok) throw new Error(data.error?.message || 'API Error');
                     if (!data.choices || data.choices.length === 0) {
                         throw new Error('Received an empty response from the model.');
@@ -284,8 +291,8 @@
             const originalText = btn.innerText;
             btn.innerText = 'Testing...';
             btn.disabled = true;
-            // ✅ ULTRA-STABLE CORS PROXY
-            const proxyUrl = 'https://api.allorigins.win/raw?url=';
+            // ✅ ULTRA-RELIABLE CORS PROXY
+            const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
 
             try {
                 const provider = document.getElementById('provider-select').value;
@@ -296,8 +303,12 @@
                 } else {
                     const url = document.getElementById('base-url').value;
                     const resp = await fetch(proxyUrl + encodeURIComponent(`${url}/models`));
+                    const textData = await resp.text();
+                    if (textData.trim().startsWith('<!DOCTYPE')) {
+                        throw new Error('The proxy server returned an HTML error page. Please try again in a few minutes.');
+                    }
+                    const data = JSON.parse(textData);
                     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                    const data = await resp.json();
                     alert(`✅ Connected successfully! Found ${data.data.length} model(s).`);
                 }
             } catch (err) {
