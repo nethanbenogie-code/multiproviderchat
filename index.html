@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Multi-Provider Chat</title>
     
+    <!-- PWA Meta Tags & Manifest -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a84ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,7 +19,7 @@
             --assistant-bubble: #e9ecef;
             --text: #333;
             --input-bg: #fff;
-            --input-text-color: #333; /* default text color for light mode */
+            --input-text-color: #333; /* 👈 ADDED: Defines text color for Light Mode */
             --shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -46,7 +47,7 @@
 
         /* Input Area */
         .input-area { background: var(--card-bg); padding: 15px 20px; display: flex; gap: 12px; border-top: 1px solid #ddd; }
-        .input-area input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 25px; outline: none; font-size: 16px; background: var(--input-bg); color: var(--input-text-color); } /* Neon Green/White applied here */
+        .input-area input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 25px; outline: none; font-size: 16px; background: var(--input-bg); color: var(--input-text-color); /* 👈 UPDATED: Applies the text color */ }
         .input-area input:focus { border-color: var(--user-bubble); }
         .input-area button { padding: 0 25px; background: var(--user-bubble); color: white; border: none; border-radius: 25px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .input-area button:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -62,7 +63,16 @@
         .modal .btn-secondary { background: #eee; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
 
         @media (prefers-color-scheme: dark) {
-            :root { --bg: #1a1a1a; --card-bg: #2c2c2c; --user-bubble: #0a84ff; --assistant-bubble: #3a3a3a; --text: #f0f0f0; --input-bg: #3a3a3a; --input-text-color: #39ff14; /* NEON GREEN (Change to #ffffff if you want white instead) */ --shadow: 0 4px 12px rgba(0,0,0,0.5); }
+            :root { 
+                --bg: #1a1a1a; 
+                --card-bg: #2c2c2c; 
+                --user-bubble: #0a84ff; 
+                --assistant-bubble: #3a3a3a; 
+                --text: #f0f0f0; 
+                --input-bg: #3a3a3a; 
+                --input-text-color: #39ff14; /* 👈 UPDATED: Neon Green for Dark Mode. Change #39ff14 to #ffffff if you want White instead */
+                --shadow: 0 4px 12px rgba(0,0,0,0.5); 
+            }
             .modal { background: #2c2c2c; color: white; }
             .modal input, .modal select { background: #3a3a3a; color: white; border-color: #555; }
             .message.system { background: #4a1a1a; color: #ffb3b3; }
@@ -80,9 +90,11 @@
     </header>
 
     <div id="chat-container">
+        <!-- Chat messages will be injected here -->
         <div class="message system">System ready. Type a message to start.</div>
     </div>
 
+    <!-- Thinking Dots -->
     <div class="thinking-indicator" id="thinking-indicator">
         <span class="dot"></span><span class="dot"></span><span class="dot"></span>
     </div>
@@ -92,6 +104,7 @@
         <button id="send-btn" onclick="sendMessage()">Send</button>
     </div>
 
+    <!-- Settings Modal -->
     <div class="modal-overlay" id="settings-modal">
         <div class="modal">
             <h2>Settings</h2>
@@ -117,16 +130,17 @@
     </div>
 
     <script>
+        // State Management
         let config = {
             provider: "gemma",
             base_url: "http://127.0.0.1:1234/v1",
             model: "google/gemma-4-e4b",
-            anthropic_key: "",
-            ngrok_url: null
+            anthropic_key: ""
         };
         let messages = [];
         let isProcessing = false;
 
+        // Load from localStorage
         function loadConfig() {
             const saved = localStorage.getItem('chatConfig');
             if (saved) {
@@ -149,15 +163,13 @@
             if (config.provider === 'anthropic') {
                 document.getElementById('base-url').value = 'https://api.anthropic.com/v1';
                 document.getElementById('model-name').value = 'claude-3-5-sonnet-20240620';
-            } else if (config.ngrok_url) {
-                document.getElementById('base-url').value = config.ngrok_url;
-                document.getElementById('model-name').value = config.model;
             } else {
                 document.getElementById('base-url').value = config.base_url;
                 document.getElementById('model-name').value = config.model;
             }
         }
 
+        // Chat Functions
         function addMessage(role, content) {
             const container = document.getElementById('chat-container');
             const div = document.createElement('div');
@@ -179,20 +191,24 @@
             addMessage('user', text);
             input.value = '';
 
+            // Show thinking dots
             document.getElementById('thinking-indicator').style.display = 'block';
             document.getElementById('send-btn').disabled = true;
             isProcessing = true;
 
             try {
+                // CRITICAL FIX: Remove 'system' role for local providers (Gemma/Ollama) to prevent empty response
                 let msgs = messages.filter(m => m.role !== 'system');
                 let responseText = "";
 
                 if (config.provider === 'anthropic') {
+                    // Anthropic specific API
                     const body = {
                         model: config.model,
                         max_tokens: 1024,
                         messages: msgs
                     };
+                    // Re-insert system message specifically for Anthropic
                     const sysMsg = messages.find(m => m.role === 'system');
                     if (sysMsg) body.system = sysMsg.content;
 
@@ -210,11 +226,8 @@
                     responseText = data.content[0].text;
 
                 } else {
-                    // ✅ ULTRA-RELIABLE CORS PROXY (Fixed)
-                    const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
-                    const targetUrl = `${config.base_url}/chat/completions`;
-                    
-                    const resp = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
+                    // OpenAI compatible (Ollama / Gemma)
+                    const resp = await fetch(`${config.base_url}/chat/completions`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -223,12 +236,7 @@
                             stream: false
                         })
                     });
-                    
-                    const textData = await resp.text();
-                    if (textData.trim().startsWith('<!DOCTYPE')) {
-                        throw new Error('The proxy server returned an HTML error page. Please try again in a few minutes.');
-                    }
-                    const data = JSON.parse(textData);
+                    const data = await resp.json();
                     if (!resp.ok) throw new Error(data.error?.message || 'API Error');
                     if (!data.choices || data.choices.length === 0) {
                         throw new Error('Received an empty response from the model.');
@@ -247,6 +255,7 @@
             }
         }
 
+        // Settings Modal Logic
         function openSettings() {
             document.getElementById('settings-modal').style.display = 'flex';
             updateFields();
@@ -269,13 +278,12 @@
                 `;
             } else {
                 const url = provider === 'gemma' ? 'http://127.0.0.1:1234/v1' : 'http://localhost:11434/v1';
-                const initialBaseUrl = config.ngrok_url || (config.base_url || url);
-
+                const model = provider === 'gemma' ? 'google/gemma-4-e4b' : 'llama3';
                 dynamicDiv.innerHTML = `
                     <label>Base URL</label>
-                    <input type="text" id="base-url" value="${initialBaseUrl}">
+                    <input type="text" id="base-url" value="${config.base_url || url}">
                     <label>Model Name</label>
-                    <input type="text" id="model-name" value="${config.model || 'google/gemma-4-e4b'}">
+                    <input type="text" id="model-name" value="${config.model || model}">
                 `;
             }
         }
@@ -288,16 +296,8 @@
                 config.anthropic_key = document.getElementById('api-key').value;
                 config.model = document.getElementById('model-name').value;
                 config.base_url = 'https://api.anthropic.com/v1';
-                config.ngrok_url = null;
             } else {
-                const enteredUrl = document.getElementById('base-url').value.trim();
-                if (enteredUrl && enteredUrl.includes("ngrok-free.dev")) {
-                    config.ngrok_url = enteredUrl;
-                    config.base_url = enteredUrl;
-                } else if (enteredUrl) {
-                    config.base_url = enteredUrl;
-                    config.ngrok_url = null;
-                }
+                config.base_url = document.getElementById('base-url').value;
                 config.model = document.getElementById('model-name').value;
             }
             saveConfig();
@@ -309,7 +309,6 @@
             const originalText = btn.innerText;
             btn.innerText = 'Testing...';
             btn.disabled = true;
-            const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
 
             try {
                 const provider = document.getElementById('provider-select').value;
@@ -319,13 +318,9 @@
                     alert("✅ Anthropic API key seems valid.");
                 } else {
                     const url = document.getElementById('base-url').value;
-                    const resp = await fetch(proxyUrl + encodeURIComponent(`${url}/models`));
-                    const textData = await resp.text();
-                    if (textData.trim().startsWith('<!DOCTYPE')) {
-                        throw new Error('The proxy server returned an HTML error page. Please try again in a few minutes.');
-                    }
-                    const data = JSON.parse(textData);
+                    const resp = await fetch(`${url}/models`);
                     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    const data = await resp.json();
                     alert(`✅ Connected successfully! Found ${data.data.length} model(s).`);
                 }
             } catch (err) {
@@ -336,11 +331,13 @@
             }
         }
 
+        // Initialize
         loadConfig();
         document.getElementById('settings-modal').addEventListener('click', function(e) {
             if (e.target === this) closeSettings();
         });
 
+        // Service Worker Registration for PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
