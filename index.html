@@ -1,747 +1,941 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Chatbox</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0d0d0d; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
-    #root { height: 100vh; display: flex; background: #0d0d0d; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #3b3b3b; border-radius: 999px; }
-    ::-webkit-scrollbar-thumb:hover { background: #555; }
-    .msg-enter { animation: fadeSlideUp 0.25s ease-out forwards; }
-    @keyframes fadeSlideUp {
-      0% { opacity: 0; transform: translateY(12px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    .typing-dot { animation: typingPulse 1.2s infinite ease-in-out; }
-    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes typingPulse {
-      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-      30% { transform: translateY(-6px); opacity: 1; }
-    }
-    .sidebar-transition { transition: transform 0.25s ease, width 0.25s ease; }
-    @media (max-width: 768px) {
-      .sidebar-mobile { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; width: 280px; transform: translateX(-100%); }
-      .sidebar-mobile.open { transform: translateX(0); }
-      .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 40; display: none; }
-      .sidebar-overlay.open { display: block; }
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>AI Chatbox</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: #0d0d0d;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        #root {
+            height: 100vh;
+            display: flex;
+            background: #0d0d0d;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b3b3b;
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .msg-enter {
+            animation: fadeSlideUp 0.25s ease-out forwards;
+        }
+        @keyframes fadeSlideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .typing-dot {
+            animation: typingPulse 1.2s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typingPulse {
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+
+        .sidebar-transition {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s ease;
+        }
+
+        /* Mobile sidebar */
+        .sidebar-mobile {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 60;
+            width: 280px;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-mobile.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 50;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
+        .sidebar-overlay.open {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Desktop sidebar */
+        @media (min-width: 768px) {
+            .sidebar-mobile {
+                position: relative;
+                transform: translateX(0) !important;
+                width: 280px;
+                z-index: auto;
+            }
+            .sidebar-overlay {
+                display: none !important;
+            }
+            .sidebar-close-btn {
+                display: none !important;
+            }
+        }
+
+        /* Touch-friendly inputs */
+        input,
+        textarea,
+        button {
+            touch-action: manipulation;
+        }
+
+        textarea {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Better scroll on mobile */
+        .scroll-container {
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+
+        /* Safe area insets for notch phones */
+        @supports (padding: max(0px)) {
+            .safe-bottom {
+                padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+            }
+            .safe-top {
+                padding-top: max(env(safe-area-inset-top, 0px), 12px);
+            }
+        }
+
+        /* Prevent zoom on double-tap */
+        button,
+        input,
+        textarea {
+            font-size: 16px !important;
+        }
+
+        /* Message bubble max-width for mobile */
+        .message-bubble {
+            max-width: 85%;
+        }
+        @media (min-width: 480px) {
+            .message-bubble {
+                max-width: 75%;
+            }
+        }
+
+        /* Smooth height transition for textarea */
+        .chat-textarea {
+            min-height: 52px;
+            max-height: 160px;
+            transition: height 0.1s ease;
+        }
+
+        /* PWA-style header */
+        .app-header {
+            min-height: 56px;
+        }
+
+        /* Better touch targets */
+        .touch-target {
+            min-height: 44px;
+            min-width: 44px;
+        }
+    </style>
 </head>
 <body>
-  <div id="root"></div>
+    <div id="root"></div>
 
-  <!-- React from CDN -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- React from CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js">
+    </script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js">
+    </script>
 
-  <script>
-    // ----- helpers -----
-    const h = React.createElement;
+    <script>
+        // ----- helpers -----
+        const h = React.createElement;
 
-    // ----- api (LM Studio / OpenAI-compatible) -----
-    const api = {
-      async chat(baseUrl, payload) {
-        const url = baseUrl.replace(/\/+$/, '') + '/v1/chat/completions';
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true',
-          },
-          body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(120000),
-        });
-        if (!resp.ok) {
-          const text = await resp.text();
-          throw new Error(text || `HTTP ${resp.status}`);
-        }
-        const data = await resp.json();
-        const content = data?.choices?.[0]?.message?.content;
-        if (content == null) throw new Error('Invalid response from server');
-        return content;
-      },
-      async test(baseUrl) {
-        try {
-          const url = baseUrl.replace(/\/+$/, '') + '/v1/models';
-          const resp = await fetch(url, {
-            headers: { 'ngrok-skip-browser-warning': 'true' },
-            signal: AbortSignal.timeout(5000),
-          });
-          return resp.ok;
-        } catch (_) { return false; }
-      }
-    };
-
-    // ----- useChat hook -----
-    const STORAGE_KEY = 'ai-chatbox-data';
-    const SETTINGS_KEY = 'ai-chatbox-settings';
-    const DEFAULT_SETTINGS = {
-      apiUrl: 'http://localhost:1234',
-      model: 'local-model',
-      temperature: 0.7,
-      maxTokens: 2048,
-      systemPrompt: 'You are a helpful assistant.',
-    };
-
-    function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-    function getDefaultConversation() {
-      return { id: generateId(), title: 'New Chat', messages: [], createdAt: Date.now() };
-    }
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const data = JSON.parse(raw);
-          if (data.conversations && data.currentId) return data;
-        }
-      } catch (_) {}
-      const conv = getDefaultConversation();
-      return { conversations: [conv], currentId: conv.id };
-    }
-    function loadSettings() {
-      try {
-        const raw = localStorage.getItem(SETTINGS_KEY);
-        if (raw) {
-          const s = JSON.parse(raw);
-          return { ...DEFAULT_SETTINGS, ...s };
-        }
-      } catch (_) {}
-      return { ...DEFAULT_SETTINGS };
-    }
-
-    function useChat() {
-      const [state, setState] = React.useState(loadState);
-      const [settings, setSettings] = React.useState(loadSettings);
-      const [isLoading, setIsLoading] = React.useState(false);
-      const [isConnected, setIsConnected] = React.useState(false);
-
-      const currentConversation = React.useMemo(() => {
-        return state.conversations.find(c => c.id === state.currentId) || null;
-      }, [state]);
-
-      const currentMessages = React.useMemo(() => {
-        return currentConversation?.messages || [];
-      }, [currentConversation]);
-
-      React.useEffect(() => {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
-      }, [state]);
-
-      React.useEffect(() => {
-        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {}
-      }, [settings]);
-
-      React.useEffect(() => {
-        if (settings.apiUrl) {
-          testConnection().then(ok => setIsConnected(ok));
-        } else {
-          setIsConnected(false);
-        }
-      }, [settings.apiUrl]);
-
-      const createNewChat = React.useCallback(() => {
-        const conv = getDefaultConversation();
-        setState(prev => ({
-          conversations: [conv, ...prev.conversations],
-          currentId: conv.id,
-        }));
-      }, []);
-
-      const deleteConversation = React.useCallback((id) => {
-        setState(prev => {
-          const filtered = prev.conversations.filter(c => c.id !== id);
-          if (filtered.length === 0) {
-            const fresh = getDefaultConversation();
-            return { conversations: [fresh], currentId: fresh.id };
-          }
-          let nextId = prev.currentId;
-          if (prev.currentId === id) nextId = filtered[0].id;
-          return { conversations: filtered, currentId: nextId };
-        });
-      }, []);
-
-      const switchConversation = React.useCallback((id) => {
-        setState(prev => {
-          if (prev.conversations.some(c => c.id === id)) {
-            return { ...prev, currentId: id };
-          }
-          return prev;
-        });
-      }, []);
-
-      const updateConversationTitle = React.useCallback((id, title) => {
-        setState(prev => ({
-          ...prev,
-          conversations: prev.conversations.map(c =>
-            c.id === id ? { ...c, title } : c
-          ),
-        }));
-      }, []);
-
-      const getConversationTitle = React.useCallback((id) => {
-        const conv = state.conversations.find(c => c.id === id);
-        if (!conv) return 'Chat';
-        if (conv.title && conv.title !== 'New Chat') return conv.title;
-        const firstMsg = conv.messages.find(m => m.role === 'user');
-        if (firstMsg) {
-          const snippet = firstMsg.content.slice(0, 40);
-          return snippet + (firstMsg.content.length > 40 ? '…' : '');
-        }
-        return 'New Chat';
-      }, [state.conversations]);
-
-      const clearCurrentChat = React.useCallback(() => {
-        setState(prev => {
-          const updated = prev.conversations.map(c =>
-            c.id === prev.currentId ? { ...c, messages: [] } : c
-          );
-          return { ...prev, conversations: updated };
-        });
-      }, []);
-
-      const sendMessage = React.useCallback(async (content) => {
-        if (!content.trim()) return;
-        if (!settings.apiUrl) {
-          alert('Please configure the API URL in Settings.');
-          return;
-        }
-
-        const convId = state.currentId;
-        setState(prev => {
-          const updated = prev.conversations.map(c =>
-            c.id === convId
-              ? { ...c, messages: [...c.messages, { role: 'user', content: content.trim(), timestamp: Date.now() }] }
-              : c
-          );
-          return { ...prev, conversations: updated };
-        });
-
-        setIsLoading(true);
-
-        try {
-          const conv = state.conversations.find(c => c.id === convId);
-          const history = (conv?.messages || []).map(m => ({ role: m.role, content: m.content }));
-
-          // Build OpenAI-style messages array: system + history + new user message
-          const messages = [];
-          if (settings.systemPrompt && settings.systemPrompt.trim()) {
-            messages.push({ role: 'system', content: settings.systemPrompt });
-          }
-          messages.push(...history);
-          messages.push({ role: 'user', content: content.trim() });
-
-          const payload = {
-            model: settings.model || 'local-model',
-            messages,
-            temperature: settings.temperature,
-            max_tokens: settings.maxTokens,
-            stream: false,
-          };
-
-          const response = await api.chat(settings.apiUrl, payload);
-
-          setState(prev => {
-            const updated = prev.conversations.map(c =>
-              c.id === convId
-                ? { ...c, messages: [...c.messages, { role: 'assistant', content: response, timestamp: Date.now() }] }
-                : c
-            );
-            return { ...prev, conversations: updated };
-          });
-
-          const convAfter = state.conversations.find(c => c.id === convId);
-          if (convAfter && convAfter.messages.length === 1) {
-            const title = content.trim().slice(0, 40) + (content.trim().length > 40 ? '…' : '');
-            updateConversationTitle(convId, title);
-          }
-
-        } catch (err) {
-          console.error('Send message error:', err);
-          const errorMsg = err.message || 'Failed to get response from AI.';
-          setState(prev => {
-            const updated = prev.conversations.map(c =>
-              c.id === convId
-                ? { ...c, messages: [...c.messages, { role: 'assistant', content: `⚠️ ${errorMsg}`, timestamp: Date.now() }] }
-                : c
-            );
-            return { ...prev, conversations: updated };
-          });
-        } finally {
-          setIsLoading(false);
-        }
-      }, [state, settings, updateConversationTitle]);
-
-      const testConnection = React.useCallback(async () => {
-        if (!settings.apiUrl) return false;
-        try {
-          const ok = await api.test(settings.apiUrl);
-          setIsConnected(ok);
-          return ok;
-        } catch (_) {
-          setIsConnected(false);
-          return false;
-        }
-      }, [settings.apiUrl]);
-
-      const updateSettings = React.useCallback((newSettings) => {
-        setSettings(prev => ({ ...prev, ...newSettings }));
-      }, []);
-
-      return {
-        conversations: state.conversations,
-        currentConversationId: state.currentId,
-        currentMessages,
-        isLoading,
-        isConnected,
-        settings,
-        createNewChat,
-        deleteConversation,
-        switchConversation,
-        sendMessage,
-        clearCurrentChat,
-        updateSettings,
-        testConnection,
-        getConversationTitle,
-      };
-    }
-
-    // ----- components (all using React.createElement) -----
-
-    function Message({ role, content, timestamp }) {
-      const isUser = role === 'user';
-      const timeStr = timestamp
-        ? new Date(timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-        : '';
-
-      return h('div', {
-        className: `flex items-start gap-3 px-3 py-3 msg-enter ${isUser ? 'flex-row-reverse' : ''}`
-      },
-        h('div', {
-          className: `w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isUser ? 'bg-blue-600' : 'bg-[#2a2a2a]'}`
-        }, h('span', { className: 'text-sm' }, isUser ? '👤' : '🤖')),
-        h('div', {
-          className: `max-w-[80%] rounded-2xl px-4 py-2.5 ${isUser ? 'bg-blue-600/90 text-white rounded-tr-none' : 'bg-[#1e1e1e] text-gray-200 rounded-tl-none'}`
-        },
-          h('div', { className: 'whitespace-pre-wrap break-words text-sm leading-relaxed' }, content),
-          h('div', { className: `text-[10px] mt-1 ${isUser ? 'text-blue-200/70' : 'text-gray-500'}` }, timeStr)
-        )
-      );
-    }
-
-    function MessageList({ messages, isLoading }) {
-      const bottomRef = React.useRef(null);
-      React.useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, [messages, isLoading]);
-
-      const children = [];
-      if (messages.length === 0) {
-        children.push(
-          h('div', { key: 'empty', className: 'flex flex-col items-center justify-center h-full text-gray-500 select-none' },
-            h('div', { className: 'text-5xl mb-4 opacity-20' }, '🤖'),
-            h('p', { className: 'text-lg font-medium text-gray-400' }, 'Start a conversation'),
-            h('p', { className: 'text-sm text-gray-600 mt-1' }, 'Send a message to begin chatting with AI.')
-          )
-        );
-      } else {
-        messages.forEach((msg, idx) => {
-          children.push(h(Message, { key: idx, role: msg.role, content: msg.content, timestamp: msg.timestamp }));
-        });
-      }
-      if (isLoading) {
-        children.push(
-          h('div', { key: 'typing', className: 'flex items-start gap-3 px-3 py-3 msg-enter' },
-            h('div', { className: 'w-8 h-8 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0' },
-              h('span', { className: 'text-sm' }, '🤖')
-            ),
-            h('div', { className: 'flex items-center gap-1.5 bg-[#1e1e1e] rounded-2xl rounded-tl-none px-4 py-3' },
-              h('span', { className: 'typing-dot w-2 h-2 bg-gray-400 rounded-full' }),
-              h('span', { className: 'typing-dot w-2 h-2 bg-gray-400 rounded-full' }),
-              h('span', { className: 'typing-dot w-2 h-2 bg-gray-400 rounded-full' })
-            )
-          )
-        );
-      }
-      children.push(h('div', { key: 'bottom', ref: bottomRef }));
-
-      return h('div', { className: 'flex-1 overflow-y-auto px-4 py-4 space-y-0.5' }, children);
-    }
-
-    function ChatInput({ onSend, disabled }) {
-      const [input, setInput] = React.useState('');
-      const textareaRef = React.useRef(null);
-
-      const handleSubmit = () => {
-        const trimmed = input.trim();
-        if (!trimmed || disabled) return;
-        onSend(trimmed);
-        setInput('');
-        if (textareaRef.current) textareaRef.current.style.height = 'auto';
-      };
-
-      const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          handleSubmit();
-        }
-      };
-
-      const handleChange = (e) => {
-        setInput(e.target.value);
-        const el = e.target;
-        el.style.height = 'auto';
-        el.style.height = Math.min(el.scrollHeight, 160) + 'px';
-      };
-
-      React.useEffect(() => {
-        if (!disabled && textareaRef.current) textareaRef.current.focus();
-      }, [disabled]);
-
-      return h('div', { className: 'border-t border-[#2a2a2a] bg-[#141414] p-4 shrink-0' },
-        h('div', { className: 'max-w-4xl mx-auto flex items-end gap-3' },
-          h('div', { className: 'flex-1 relative' },
-            h('textarea', {
-              ref: textareaRef,
-              value: input,
-              onChange: handleChange,
-              onKeyDown: handleKeyDown,
-              disabled: disabled,
-              placeholder: disabled ? 'Connecting…' : 'Type a message…',
-              rows: 1,
-              className: `w-full resize-none rounded-2xl bg-[#1e1e1e] text-white placeholder-gray-500 px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 transition border border-[#2a2a2a] focus:border-blue-600 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`,
-              style: { minHeight: '52px', maxHeight: '160px' }
-            })
-          ),
-          h('button', {
-            onClick: handleSubmit,
-            disabled: !input.trim() || disabled,
-            className: `shrink-0 rounded-full p-3 transition ${input.trim() && !disabled ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30' : 'bg-[#2a2a2a] text-gray-500 cursor-not-allowed'}`
-          }, h('i', { className: 'fas fa-paper-plane' }))
-        )
-      );
-    }
-
-    function StatusIndicator({ connected }) {
-      return h('div', { className: 'flex items-center gap-2 text-xs' },
-        h('span', {
-          className: `inline-block w-2.5 h-2.5 rounded-full ${connected ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`
-        }),
-        h('span', { className: 'text-gray-400 hidden sm:inline' }, connected ? 'Online' : 'Offline')
-      );
-    }
-
-    function Sidebar({ conversations, currentId, onNewChat, onSwitchChat, onDeleteChat, onOpenSettings, isOpen, onClose }) {
-      const listItems = conversations.length === 0 ?
-        h('div', { className: 'text-center text-gray-500 text-sm py-8' },
-          'No conversations yet.', h('br'), 'Click ', h('i', { className: 'fas fa-plus' }), ' to start.'
-        ) :
-        conversations.map(conv => {
-          const isActive = conv.id === currentId;
-          const title = conv.title || 'New Chat';
-          const msgCount = conv.messages.length;
-          return h('div', {
-            key: conv.id,
-            className: `group flex items-center justify-between rounded-lg px-3 py-2.5 cursor-pointer transition ${isActive ? 'bg-[#2a2a2a]' : 'hover:bg-[#222]'}`,
-            onClick: () => onSwitchChat(conv.id)
-          },
-            h('div', { className: 'flex-1 min-w-0' },
-              h('div', { className: 'text-sm font-medium text-white truncate' }, title),
-              h('div', { className: 'text-xs text-gray-500' }, msgCount, ' messages')
-            ),
-            h('button', {
-              onClick: (e) => { e.stopPropagation(); onDeleteChat(conv.id); },
-              className: 'text-gray-500 hover:text-red-400 transition p-1 opacity-0 group-hover:opacity-100'
-            }, h('i', { className: 'fas fa-trash-alt text-sm' }))
-          );
-        });
-
-      return h(React.Fragment, null,
-        h('aside', {
-          className: `sidebar-transition w-72 shrink-0 bg-[#1a1a1a] border-r border-[#2a2a2a] flex flex-col h-full ${isOpen ? 'sidebar-mobile open' : 'sidebar-mobile'} md:relative md:translate-x-0 md:!w-72`
-        },
-          h('div', { className: 'flex items-center justify-between p-4 border-b border-[#2a2a2a]' },
-            h('h2', { className: 'text-lg font-bold text-white tracking-tight' }, 'Conversations'),
-            h('button', { onClick: onNewChat, className: 'bg-[#2a2a2a] hover:bg-[#3a3a2a] text-white rounded-lg p-2 transition' },
-              h('i', { className: 'fas fa-plus' })
-            )
-          ),
-          h('div', { className: 'flex-1 overflow-y-auto p-2 space-y-1' }, listItems),
-          h('div', { className: 'p-4 border-t border-[#2a2a2a]' },
-            h('button', {
-              onClick: onOpenSettings,
-              className: 'w-full flex items-center justify-center gap-2 text-gray-400 hover:text-white hover:bg-[#2a2a2a] rounded-lg py-2 transition text-sm'
+        // ----- api (LM Studio / OpenAI-compatible) -----
+        const api = {
+            async chat(baseUrl, payload) {
+                const url = baseUrl.replace(/\/+$/, '') + '/v1/chat/completions';
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true',
+                    },
+                    body: JSON.stringify(payload),
+                    signal: AbortSignal.timeout(120000),
+                });
+                if (!resp.ok) {
+                    const text = await resp.text();
+                    throw new Error(text || `HTTP ${resp.status}`);
+                }
+                const data = await resp.json();
+                const content = data?.choices?.[0]?.message?.content;
+                if (content == null) throw new Error('Invalid response from server');
+                return content;
             },
-              h('i', { className: 'fas fa-sliders-h' }),
-              h('span', null, 'Settings')
-            )
-          )
-        ),
-        h('button', {
-          onClick: onClose,
-          className: 'md:hidden absolute top-3 right-3 z-50 text-gray-400 hover:text-white text-xl p-1'
-        }, h('i', { className: 'fas fa-times' }))
-      );
-    }
+            async test(baseUrl) {
+                try {
+                    const url = baseUrl.replace(/\/+$/, '') + '/v1/models';
+                    const resp = await fetch(url, {
+                        headers: { 'ngrok-skip-browser-warning': 'true' },
+                        signal: AbortSignal.timeout(5000),
+                    });
+                    return resp.ok;
+                } catch (_) { return false; }
+            }
+        };
 
-    function SettingsModal({ isOpen, onClose, settings, onSave, onTest, isConnected }) {
-      const [form, setForm] = React.useState(settings);
-      const [testing, setTesting] = React.useState(false);
-      const [testResult, setTestResult] = React.useState(null);
+        // ----- useChat hook -----
+        const STORAGE_KEY = 'ai-chatbox-data';
+        const SETTINGS_KEY = 'ai-chatbox-settings';
+        const DEFAULT_SETTINGS = {
+            apiUrl: 'http://localhost:1234',
+            model: 'local-model',
+            temperature: 0.7,
+            maxTokens: 2048,
+            systemPrompt: 'You are a helpful assistant.',
+        };
 
-      React.useEffect(() => {
-        if (isOpen) { setForm(settings); setTestResult(null); }
-      }, [isOpen, settings]);
+        function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
-      const handleChange = (e) => {
-        const { name, value, type } = e.target;
-        setForm(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) : value }));
-      };
+        function getDefaultConversation() {
+            return { id: generateId(), title: 'New Chat', messages: [], createdAt: Date.now() };
+        }
 
-      const handleSubmit = (e) => {
-        e.preventDefault();
-        onSave(form);
-        onClose();
-      };
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    if (data.conversations && data.currentId) return data;
+                }
+            } catch (_) {}
+            const conv = getDefaultConversation();
+            return { conversations: [conv], currentId: conv.id };
+        }
 
-      const handleTest = async () => {
-        if (!form.apiUrl) return;
-        // Persist first so onTest reads the latest URL
-        onSave(form);
-        setTesting(true);
-        setTestResult(null);
-        try {
-          const ok = await api.test(form.apiUrl);
-          setTestResult(ok);
-        } catch (_) { setTestResult(false); }
-        finally { setTesting(false); }
-      };
+        function loadSettings() {
+            try {
+                const raw = localStorage.getItem(SETTINGS_KEY);
+                if (raw) {
+                    const s = JSON.parse(raw);
+                    return { ...DEFAULT_SETTINGS, ...s };
+                }
+            } catch (_) {}
+            return { ...DEFAULT_SETTINGS };
+        }
 
-      if (!isOpen) return null;
+        function useChat() {
+            const [state, setState] = React.useState(loadState);
+            const [settings, setSettings] = React.useState(loadSettings);
+            const [isLoading, setIsLoading] = React.useState(false);
+            const [isConnected, setIsConnected] = React.useState(false);
 
-      return h('div', { className: 'fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm' },
-        h('div', { className: 'bg-[#1a1a1a] rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-[#2a2a2a] shadow-2xl' },
-          h('div', { className: 'flex items-center justify-between p-5 border-b border-[#2a2a2a]' },
-            h('h2', { className: 'text-xl font-bold text-white' }, 'Settings'),
-            h('button', { onClick: onClose, className: 'text-gray-400 hover:text-white text-xl p-1' },
-              h('i', { className: 'fas fa-times' })
-            )
-          ),
-          h('form', { onSubmit: handleSubmit, className: 'p-5 space-y-5' },
-            h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' },
-                'API URL ', h('span', { className: 'text-red-400' }, '*')
-              ),
-              h('input', {
-                type: 'url',
-                name: 'apiUrl',
-                value: form.apiUrl || '',
-                onChange: handleChange,
-                placeholder: 'http://localhost:1234',
-                className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition',
-                required: true
-              }),
-              h('p', { className: 'text-xs text-gray-500 mt-1.5' }, 'LM Studio server base URL — no /v1 suffix (e.g. http://localhost:1234)')
-            ),
-            h('div', { className: 'flex items-center gap-3' },
-              h('button', {
-                type: 'button',
-                onClick: handleTest,
-                disabled: testing || !form.apiUrl,
-                className: 'px-4 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white rounded-lg text-sm transition disabled:opacity-50'
-              }, testing ? 'Testing…' : 'Test Connection'),
-              testResult !== null && h('span', { className: `text-sm ${testResult ? 'text-green-400' : 'text-red-400'}` },
-                testResult ? '✅ Connected' : '❌ Failed'
-              ),
-              isConnected && h('span', { className: 'text-xs text-green-400/70 ml-auto' }, '● Online')
-            ),
-            h('hr', { className: 'border-[#2a2a2a]' }),
-            h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' }, 'Model Name'),
-              h('input', {
-                type: 'text',
-                name: 'model',
-                value: form.model || '',
-                onChange: handleChange,
-                placeholder: 'google/gemma-3-4b',
-                className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition'
-              }),
-              h('p', { className: 'text-xs text-gray-500 mt-1.5' }, 'Match the model id loaded in LM Studio (see its Server tab). LM Studio is usually lenient if left default.')
-            ),
-            h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' },
-                'Temperature: ', h('span', { className: 'text-blue-400' }, form.temperature ?? 0.7)
-              ),
-              h('input', {
-                type: 'range',
-                name: 'temperature',
-                min: 0,
-                max: 2,
-                step: 0.05,
-                value: form.temperature ?? 0.7,
-                onChange: handleChange,
-                className: 'w-full accent-blue-600 bg-[#2a2a2a] rounded-lg h-1.5'
-              }),
-              h('div', { className: 'flex justify-between text-xs text-gray-500' },
-                h('span', null, 'Precise'),
-                h('span', null, 'Creative')
-              )
-            ),
-            h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' },
-                'Max Tokens: ', h('span', { className: 'text-blue-400' }, form.maxTokens ?? 2048)
-              ),
-              h('input', {
-                type: 'range',
-                name: 'maxTokens',
-                min: 256,
-                max: 8192,
-                step: 128,
-                value: form.maxTokens ?? 2048,
-                onChange: handleChange,
-                className: 'w-full accent-blue-600 bg-[#2a2a2a] rounded-lg h-1.5'
-              })
-            ),
-            h('div', null,
-              h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' }, 'System Prompt'),
-              h('textarea', {
-                name: 'systemPrompt',
-                value: form.systemPrompt || '',
-                onChange: handleChange,
-                rows: 3,
-                placeholder: 'You are a helpful assistant.',
-                className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition resize-none'
-              })
-            ),
-            h('div', { className: 'flex justify-end gap-3 pt-2 border-t border-[#2a2a2a]' },
-              h('button', {
-                type: 'button',
-                onClick: onClose,
-                className: 'px-5 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-[#2a2a2a] rounded-lg transition'
-              }, 'Cancel'),
-              h('button', {
-                type: 'submit',
-                className: 'px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition shadow-lg shadow-blue-600/30'
-              }, 'Save Settings')
-            )
-          )
-        )
-      );
-    }
+            const currentConversation = React.useMemo(() => {
+                return state.conversations.find(c => c.id === state.currentId) || null;
+            }, [state]);
 
-    // ----- App -----
-    function App() {
-      const [sidebarOpen, setSidebarOpen] = React.useState(false);
-      const [settingsOpen, setSettingsOpen] = React.useState(false);
-      const [showClearConfirm, setShowClearConfirm] = React.useState(false);
+            const currentMessages = React.useMemo(() => {
+                return currentConversation?.messages || [];
+            }, [currentConversation]);
 
-      const {
-        conversations,
-        currentConversationId,
-        currentMessages,
-        isLoading,
-        isConnected,
-        settings,
-        createNewChat,
-        deleteConversation,
-        switchConversation,
-        sendMessage,
-        clearCurrentChat,
-        updateSettings,
-        testConnection,
-        getConversationTitle,
-      } = useChat();
+            React.useEffect(() => {
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
+            }, [state]);
 
-      const closeSidebar = () => setSidebarOpen(false);
+            React.useEffect(() => {
+                try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {}
+            }, [settings]);
 
-      const handleNewChat = () => { createNewChat(); closeSidebar(); };
-      const handleSwitchChat = (id) => { switchConversation(id); closeSidebar(); };
-      const handleDeleteChat = (id) => { deleteConversation(id); closeSidebar(); };
-      const handleClearChat = () => {
-        if (currentMessages.length === 0) return;
-        setShowClearConfirm(true);
-      };
-      const confirmClear = () => { clearCurrentChat(); setShowClearConfirm(false); };
+            React.useEffect(() => {
+                if (settings.apiUrl) {
+                    testConnection().then(ok => setIsConnected(ok));
+                } else {
+                    setIsConnected(false);
+                }
+            }, [settings.apiUrl]);
 
-      return h('div', { className: 'flex h-screen w-screen bg-[#0d0d0d] text-gray-200 overflow-hidden' },
-        h('div', {
-          className: `sidebar-overlay ${sidebarOpen ? 'open' : ''}`,
-          onClick: () => setSidebarOpen(false)
-        }),
-        h(Sidebar, {
-          conversations,
-          currentId: currentConversationId,
-          onNewChat: handleNewChat,
-          onSwitchChat: handleSwitchChat,
-          onDeleteChat: handleDeleteChat,
-          onOpenSettings: () => setSettingsOpen(true),
-          isOpen: sidebarOpen,
-          onClose: () => setSidebarOpen(false)
-        }),
-        h('div', { className: 'flex-1 flex flex-col min-w-0 bg-[#141414]' },
-          h('header', { className: 'flex items-center justify-between px-4 py-3 border-b border-[#2a2a2a] bg-[#141414] shrink-0' },
-            h('div', { className: 'flex items-center gap-3' },
-              h('button', {
-                onClick: () => setSidebarOpen(true),
-                className: 'md:hidden text-gray-400 hover:text-white text-xl p-1'
-              }, h('i', { className: 'fas fa-bars' })),
-              h('h1', { className: 'text-lg font-semibold text-white truncate' },
-                currentConversationId ? getConversationTitle(currentConversationId) : 'AI Chatbox'
-              )
-            ),
-            h('div', { className: 'flex items-center gap-3' },
-              h(StatusIndicator, { connected: isConnected }),
-              h('button', {
-                onClick: handleClearChat,
-                className: 'text-gray-400 hover:text-white text-sm px-2 py-1 rounded hover:bg-[#2a2a2a] transition',
-                disabled: currentMessages.length === 0
-              }, h('i', { className: 'fas fa-eraser' })),
-              h('button', {
-                onClick: () => setSettingsOpen(true),
-                className: 'text-gray-400 hover:text-white text-lg p-1'
-              }, h('i', { className: 'fas fa-sliders-h' }))
-            )
-          ),
-          h(MessageList, { messages: currentMessages, isLoading }),
-          h(ChatInput, { onSend: sendMessage, disabled: isLoading || !isConnected }),
-          showClearConfirm && h('div', { className: 'absolute inset-0 bg-black/60 flex items-center justify-center z-50' },
-            h('div', { className: 'bg-[#1e1e1e] rounded-xl p-6 max-w-sm w-full border border-[#2a2a2a] shadow-2xl' },
-              h('h3', { className: 'text-lg font-semibold text-white mb-2' }, 'Clear chat?'),
-              h('p', { className: 'text-gray-400 text-sm mb-5' }, 'This will remove all messages in the current conversation.'),
-              h('div', { className: 'flex justify-end gap-3' },
-                h('button', {
-                  onClick: () => setShowClearConfirm(false),
-                  className: 'px-4 py-2 rounded-lg text-sm text-gray-300 hover:bg-[#2a2a2a] transition'
-                }, 'Cancel'),
-                h('button', {
-                  onClick: confirmClear,
-                  className: 'px-4 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-700 text-white transition'
-                }, 'Clear')
-              )
-            )
-          )
-        ),
-        h(SettingsModal, {
-          isOpen: settingsOpen,
-          onClose: () => setSettingsOpen(false),
-          settings,
-          onSave: updateSettings,
-          onTest: testConnection,
-          isConnected
-        })
-      );
-    }
+            const createNewChat = React.useCallback(() => {
+                const conv = getDefaultConversation();
+                setState(prev => ({
+                    conversations: [conv, ...prev.conversations],
+                    currentId: conv.id,
+                }));
+            }, []);
 
-    // ----- mount -----
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(h(React.StrictMode, null, h(App)));
-  </script>
+            const deleteConversation = React.useCallback((id) => {
+                setState(prev => {
+                    const filtered = prev.conversations.filter(c => c.id !== id);
+                    if (filtered.length === 0) {
+                        const fresh = getDefaultConversation();
+                        return { conversations: [fresh], currentId: fresh.id };
+                    }
+                    let nextId = prev.currentId;
+                    if (prev.currentId === id) nextId = filtered[0].id;
+                    return { conversations: filtered, currentId: nextId };
+                });
+            }, []);
+
+            const switchConversation = React.useCallback((id) => {
+                setState(prev => {
+                    if (prev.conversations.some(c => c.id === id)) {
+                        return { ...prev, currentId: id };
+                    }
+                    return prev;
+                });
+            }, []);
+
+            const updateConversationTitle = React.useCallback((id, title) => {
+                setState(prev => ({
+                    ...prev,
+                    conversations: prev.conversations.map(c =>
+                        c.id === id ? { ...c, title } : c
+                    ),
+                }));
+            }, []);
+
+            const getConversationTitle = React.useCallback((id) => {
+                const conv = state.conversations.find(c => c.id === id);
+                if (!conv) return 'Chat';
+                if (conv.title && conv.title !== 'New Chat') return conv.title;
+                const firstMsg = conv.messages.find(m => m.role === 'user');
+                if (firstMsg) {
+                    const snippet = firstMsg.content.slice(0, 40);
+                    return snippet + (firstMsg.content.length > 40 ? '…' : '');
+                }
+                return 'New Chat';
+            }, [state.conversations]);
+
+            const clearCurrentChat = React.useCallback(() => {
+                setState(prev => {
+                    const updated = prev.conversations.map(c =>
+                        c.id === prev.currentId ? { ...c, messages: [] } : c
+                    );
+                    return { ...prev, conversations: updated };
+                });
+            }, []);
+
+            const sendMessage = React.useCallback(async (content) => {
+                if (!content.trim()) return;
+                if (!settings.apiUrl) {
+                    alert('Please configure the API URL in Settings.');
+                    return;
+                }
+
+                const convId = state.currentId;
+                setState(prev => {
+                    const updated = prev.conversations.map(c =>
+                        c.id === convId ?
+                        { ...c, messages: [...c.messages, { role: 'user', content: content.trim(), timestamp: Date
+                                    .now() }] } :
+                        c
+                    );
+                    return { ...prev, conversations: updated };
+                });
+
+                setIsLoading(true);
+
+                try {
+                    const conv = state.conversations.find(c => c.id === convId);
+                    const history = (conv?.messages || []).map(m => ({ role: m.role, content: m.content }));
+
+                    const messages = [];
+                    if (settings.systemPrompt && settings.systemPrompt.trim()) {
+                        messages.push({ role: 'system', content: settings.systemPrompt });
+                    }
+                    messages.push(...history);
+                    messages.push({ role: 'user', content: content.trim() });
+
+                    const payload = {
+                        model: settings.model || 'local-model',
+                        messages,
+                        temperature: settings.temperature,
+                        max_tokens: settings.maxTokens,
+                        stream: false,
+                    };
+
+                    const response = await api.chat(settings.apiUrl, payload);
+
+                    setState(prev => {
+                        const updated = prev.conversations.map(c =>
+                            c.id === convId ?
+                            { ...c, messages: [...c.messages, { role: 'assistant', content: response,
+                                    timestamp: Date.now() }] } :
+                            c
+                        );
+                        return { ...prev, conversations: updated };
+                    });
+
+                    const convAfter = state.conversations.find(c => c.id === convId);
+                    if (convAfter && convAfter.messages.length === 1) {
+                        const title = content.trim().slice(0, 40) + (content.trim().length > 40 ? '…' : '');
+                        updateConversationTitle(convId, title);
+                    }
+
+                } catch (err) {
+                    console.error('Send message error:', err);
+                    const errorMsg = err.message || 'Failed to get response from AI.';
+                    setState(prev => {
+                        const updated = prev.conversations.map(c =>
+                            c.id === convId ?
+                            { ...c, messages: [...c.messages, { role: 'assistant', content: `⚠️ ${errorMsg}`,
+                                    timestamp: Date.now() }] } :
+                            c
+                        );
+                        return { ...prev, conversations: updated };
+                    });
+                } finally {
+                    setIsLoading(false);
+                }
+            }, [state, settings, updateConversationTitle]);
+
+            const testConnection = React.useCallback(async () => {
+                if (!settings.apiUrl) return false;
+                try {
+                    const ok = await api.test(settings.apiUrl);
+                    setIsConnected(ok);
+                    return ok;
+                } catch (_) {
+                    setIsConnected(false);
+                    return false;
+                }
+            }, [settings.apiUrl]);
+
+            const updateSettings = React.useCallback((newSettings) => {
+                setSettings(prev => ({ ...prev, ...newSettings }));
+            }, []);
+
+            return {
+                conversations: state.conversations,
+                currentConversationId: state.currentId,
+                currentMessages,
+                isLoading,
+                isConnected,
+                settings,
+                createNewChat,
+                deleteConversation,
+                switchConversation,
+                sendMessage,
+                clearCurrentChat,
+                updateSettings,
+                testConnection,
+                getConversationTitle,
+            };
+        }
+
+        // ----- components -----
+
+        function Message({ role, content, timestamp }) {
+            const isUser = role === 'user';
+            const timeStr = timestamp ?
+                new Date(timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) :
+                '';
+
+            return h('div', {
+                className: `flex items-start gap-2.5 px-2 sm:px-3 py-2.5 msg-enter ${isUser ? 'flex-row-reverse' : ''}`
+            },
+                h('div', {
+                    className: `w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isUser ? 'bg-blue-600' : 'bg-[#2a2a2a]'} touch-target`
+                }, h('span', { className: 'text-sm' }, isUser ? '👤' : '🤖')),
+                h('div', {
+                    className: `message-bubble rounded-2xl px-3.5 py-2.5 ${isUser ? 'bg-blue-600/90 text-white rounded-tr-none' : 'bg-[#1e1e1e] text-gray-200 rounded-tl-none'}`
+                },
+                    h('div', { className: 'whitespace-pre-wrap break-words text-sm leading-relaxed' }, content),
+                    h('div', { className: `text-[10px] mt-1 ${isUser ? 'text-blue-200/70' : 'text-gray-500'}` }, timeStr)
+                )
+            );
+        }
+
+        function MessageList({ messages, isLoading }) {
+            const bottomRef = React.useRef(null);
+            const containerRef = React.useRef(null);
+
+            React.useEffect(() => {
+                bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }, [messages, isLoading]);
+
+            const children = [];
+            if (messages.length === 0) {
+                children.push(
+                    h('div', { key: 'empty', className: 'flex flex-col items-center justify-center h-full text-gray-500 select-none px-4' },
+                        h('div', { className: 'text-5xl mb-4 opacity-20' }, '🤖'),
+                        h('p', { className: 'text-lg font-medium text-gray-400' }, 'Start a conversation'),
+                        h('p', { className: 'text-sm text-gray-600 mt-1 text-center' }, 'Send a message to begin chatting with AI.')
+                    )
+                );
+            } else {
+                messages.forEach((msg, idx) => {
+                    children.push(h(Message, { key: idx, role: msg.role, content: msg.content, timestamp: msg
+                            .timestamp }));
+                });
+            }
+            if (isLoading) {
+                children.push(
+                    h('div', { key: 'typing', className: 'flex items-start gap-2.5 px-2 sm:px-3 py-2.5 msg-enter' },
+                        h('div', { className: 'w-8 h-8 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0' },
+                            h('span', { className: 'text-sm' }, '🤖')
+                        ),
+                        h('div', { className: 'flex items-center gap-1.5 bg-[#1e1e1e] rounded-2xl rounded-tl-none px-4 py-3' },
+                            h('span', { className: 'typing-dot w-2 h-2 bg-gray-400 rounded-full' }),
+                            h('span', { className: 'typing-dot w-2 h-2 bg-gray-400 rounded-full' }),
+                            h('span', { className: 'typing-dot w-2 h-2 bg-gray-400 rounded-full' })
+                        )
+                    )
+                );
+            }
+            children.push(h('div', { key: 'bottom', ref: bottomRef }));
+
+            return h('div', {
+                ref: containerRef,
+                className: 'flex-1 overflow-y-auto px-1 sm:px-2 py-3 space-y-0.5 scroll-container'
+            }, children);
+        }
+
+        function ChatInput({ onSend, disabled }) {
+            const [input, setInput] = React.useState('');
+            const textareaRef = React.useRef(null);
+            const [isFocused, setIsFocused] = React.useState(false);
+
+            const handleSubmit = () => {
+                const trimmed = input.trim();
+                if (!trimmed || disabled) return;
+                onSend(trimmed);
+                setInput('');
+                if (textareaRef.current) {
+                    textareaRef.current.style.height = 'auto';
+                }
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                }
+            };
+
+            const handleChange = (e) => {
+                setInput(e.target.value);
+                const el = e.target;
+                el.style.height = 'auto';
+                el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+            };
+
+            React.useEffect(() => {
+                if (!disabled && textareaRef.current) {
+                    // Don't auto-focus on mobile to avoid keyboard popup
+                    if (window.innerWidth >= 768) {
+                        textareaRef.current.focus();
+                    }
+                }
+            }, [disabled]);
+
+            return h('div', { className: 'border-t border-[#2a2a2a] bg-[#141414] p-3 safe-bottom' },
+                h('div', { className: 'max-w-4xl mx-auto flex items-end gap-2.5' },
+                    h('div', { className: 'flex-1 relative' },
+                        h('textarea', {
+                            ref: textareaRef,
+                            value: input,
+                            onChange: handleChange,
+                            onKeyDown: handleKeyDown,
+                            onFocus: () => setIsFocused(true),
+                            onBlur: () => setIsFocused(false),
+                            disabled: disabled,
+                            placeholder: disabled ? 'Connecting…' : 'Type a message…',
+                            rows: 1,
+                            className: `chat-textarea w-full resize-none rounded-2xl bg-[#1e1e1e] text-white placeholder-gray-500 px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 transition border ${isFocused ? 'border-blue-600 ring-2 ring-blue-600/30' : 'border-[#2a2a2a]'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`,
+                            style: { minHeight: '52px' }
+                        })
+                    ),
+                    h('button', {
+                        onClick: handleSubmit,
+                        disabled: !input.trim() || disabled,
+                        className: `shrink-0 rounded-full p-3.5 touch-target transition ${input.trim() && !disabled ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 active:scale-95' : 'bg-[#2a2a2a] text-gray-500 cursor-not-allowed'}`
+                    }, h('i', { className: 'fas fa-paper-plane text-sm' }))
+                )
+            );
+        }
+
+        function StatusIndicator({ connected }) {
+            return h('div', { className: 'flex items-center gap-1.5 text-xs' },
+                h('span', {
+                    className: `inline-block w-2 h-2 rounded-full ${connected ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`
+                }),
+                h('span', { className: 'text-gray-400 hidden sm:inline' }, connected ? 'Online' : 'Offline')
+            );
+        }
+
+        function Sidebar({ conversations, currentId, onNewChat, onSwitchChat, onDeleteChat, onOpenSettings, isOpen,
+            onClose }) {
+            const listItems = conversations.length === 0 ?
+                h('div', { className: 'text-center text-gray-500 text-sm py-8 px-4' },
+                    'No conversations yet.', h('br'), 'Tap ', h('i', { className: 'fas fa-plus' }), ' to start.'
+                ) :
+                conversations.map(conv => {
+                    const isActive = conv.id === currentId;
+                    const title = conv.title || 'New Chat';
+                    const msgCount = conv.messages.length;
+                    return h('div', {
+                        key: conv.id,
+                        className: `group flex items-center justify-between rounded-lg px-3 py-3 cursor-pointer transition touch-target ${isActive ? 'bg-[#2a2a2a]' : 'hover:bg-[#222] active:bg-[#2a2a2a]'}`,
+                        onClick: () => onSwitchChat(conv.id)
+                    },
+                        h('div', { className: 'flex-1 min-w-0' },
+                            h('div', { className: 'text-sm font-medium text-white truncate' }, title),
+                            h('div', { className: 'text-xs text-gray-500' }, msgCount, ' messages')
+                        ),
+                        h('button', {
+                            onClick: (e) => { e.stopPropagation();
+                                onDeleteChat(conv.id); },
+                            className: 'text-gray-500 hover:text-red-400 transition p-2 touch-target opacity-0 group-hover:opacity-100 active:opacity-100'
+                        }, h('i', { className: 'fas fa-trash-alt text-sm' }))
+                    );
+                });
+
+            return h(React.Fragment, null,
+                h('aside', {
+                    className: `sidebar-mobile flex flex-col bg-[#1a1a1a] border-r border-[#2a2a2a] h-full`
+                },
+                    h('div', { className: 'flex items-center justify-between p-4 border-b border-[#2a2a2a] safe-top' },
+                        h('h2', { className: 'text-lg font-bold text-white tracking-tight' }, 'Conversations'),
+                        h('div', { className: 'flex items-center gap-2' },
+                            h('button', {
+                                onClick: onNewChat,
+                                className: 'bg-[#2a2a2a] hover:bg-[#3a3a3a] active:bg-[#3a3a3a] text-white rounded-lg p-2.5 touch-target transition'
+                            }, h('i', { className: 'fas fa-plus' })),
+                            h('button', {
+                                onClick: onClose,
+                                className: 'sidebar-close-btn md:hidden text-gray-400 hover:text-white p-2.5 touch-target transition'
+                            }, h('i', { className: 'fas fa-times text-lg' }))
+                        )
+                    ),
+                    h('div', { className: 'flex-1 overflow-y-auto p-2 space-y-1 scroll-container' }, listItems),
+                    h('div', { className: 'p-4 border-t border-[#2a2a2a] safe-bottom' },
+                        h('button', {
+                            onClick: onOpenSettings,
+                            className: 'w-full flex items-center justify-center gap-2 text-gray-400 hover:text-white hover:bg-[#2a2a2a] active:bg-[#2a2a2a] rounded-lg py-2.5 touch-target transition text-sm'
+                        },
+                            h('i', { className: 'fas fa-sliders-h' }),
+                            h('span', null, 'Settings')
+                        )
+                    )
+                ),
+                h('div', {
+                    className: `sidebar-overlay ${isOpen ? 'open' : ''}`,
+                    onClick: onClose
+                })
+            );
+        }
+
+        function SettingsModal({ isOpen, onClose, settings, onSave, onTest, isConnected }) {
+            const [form, setForm] = React.useState(settings);
+            const [testing, setTesting] = React.useState(false);
+            const [testResult, setTestResult] = React.useState(null);
+
+            React.useEffect(() => {
+                if (isOpen) { setForm(settings);
+                    setTestResult(null); }
+            }, [isOpen, settings]);
+
+            const handleChange = (e) => {
+                const { name, value, type } = e.target;
+                setForm(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) : value }));
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                onSave(form);
+                onClose();
+            };
+
+            const handleTest = async () => {
+                if (!form.apiUrl) return;
+                onSave(form);
+                setTesting(true);
+                setTestResult(null);
+                try {
+                    const ok = await api.test(form.apiUrl);
+                    setTestResult(ok);
+                } catch (_) { setTestResult(false); } finally { setTesting(false); }
+            };
+
+            if (!isOpen) return null;
+
+            return h('div', { className: 'fixed inset-0 bg-black/70 flex items-center justify-center z-[70] p-4 backdrop-blur-sm' },
+                h('div', { className: 'bg-[#1a1a1a] rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto border border-[#2a2a2a] shadow-2xl scroll-container' },
+                    h('div', { className: 'flex items-center justify-between p-4 border-b border-[#2a2a2a] safe-top' },
+                        h('h2', { className: 'text-xl font-bold text-white' }, 'Settings'),
+                        h('button', {
+                            onClick: onClose,
+                            className: 'text-gray-400 hover:text-white text-xl p-2 touch-target transition'
+                        }, h('i', { className: 'fas fa-times' }))
+                    ),
+                    h('form', { onSubmit: handleSubmit, className: 'p-4 space-y-4' },
+                        h('div', null,
+                            h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' },
+                                'API URL ', h('span', { className: 'text-red-400' }, '*')
+                            ),
+                            h('input', {
+                                type: 'url',
+                                name: 'apiUrl',
+                                value: form.apiUrl || '',
+                                onChange: handleChange,
+                                placeholder: 'http://localhost:1234',
+                                className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition',
+                                required: true,
+                                inputMode: 'url',
+                                autoCapitalize: 'off',
+                                autoCorrect: 'off'
+                            }),
+                            h('p', { className: 'text-xs text-gray-500 mt-1.5' }, 'LM Studio server base URL — no /v1 suffix')
+                        ),
+                        h('div', { className: 'flex flex-wrap items-center gap-3' },
+                            h('button', {
+                                type: 'button',
+                                onClick: handleTest,
+                                disabled: testing || !form.apiUrl,
+                                className: 'px-4 py-2.5 bg-[#2a2a2a] hover:bg-[#3a3a3a] active:bg-[#3a3a3a] text-white rounded-lg text-sm transition touch-target disabled:opacity-50'
+                            }, testing ? 'Testing…' : 'Test Connection'),
+                            testResult !== null && h('span', { className: `text-sm ${testResult ? 'text-green-400' : 'text-red-400'}` },
+                                testResult ? '✅ Connected' : '❌ Failed'
+                            ),
+                            isConnected && h('span', { className: 'text-xs text-green-400/70 ml-auto' }, '● Online')
+                        ),
+                        h('hr', { className: 'border-[#2a2a2a]' }),
+                        h('div', null,
+                            h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' }, 'Model Name'),
+                            h('input', {
+                                type: 'text',
+                                name: 'model',
+                                value: form.model || '',
+                                onChange: handleChange,
+                                placeholder: 'google/gemma-3-4b',
+                                className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition',
+                                autoCapitalize: 'off',
+                                autoCorrect: 'off'
+                            }),
+                            h('p', { className: 'text-xs text-gray-500 mt-1.5' }, 'Model ID loaded in LM Studio')
+                        ),
+                        h('div', null,
+                            h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' },
+                                'Temperature: ', h('span', { className: 'text-blue-400' }, form.temperature ?? 0.7)
+                            ),
+                            h('input', {
+                                type: 'range',
+                                name: 'temperature',
+                                min: 0,
+                                max: 2,
+                                step: 0.05,
+                                value: form.temperature ?? 0.7,
+                                onChange: handleChange,
+                                className: 'w-full accent-blue-600 bg-[#2a2a2a] rounded-lg h-1.5'
+                            }),
+                            h('div', { className: 'flex justify-between text-xs text-gray-500' },
+                                h('span', null, 'Precise'),
+                                h('span', null, 'Creative')
+                            )
+                        ),
+                        h('div', null,
+                            h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' },
+                                'Max Tokens: ', h('span', { className: 'text-blue-400' }, form.maxTokens ?? 2048)
+                            ),
+                            h('input', {
+                                type: 'range',
+                                name: 'maxTokens',
+                                min: 256,
+                                max: 8192,
+                                step: 128,
+                                value: form.maxTokens ?? 2048,
+                                onChange: handleChange,
+                                className: 'w-full accent-blue-600 bg-[#2a2a2a] rounded-lg h-1.5'
+                            })
+                        ),
+                        h('div', null,
+                            h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' }, 'System Prompt'),
+                            h('textarea', {
+                                name: 'systemPrompt',
+                                value: form.systemPrompt || '',
+                                onChange: handleChange,
+                                rows: 3,
+                                placeholder: 'You are a helpful assistant.',
+                                className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition resize-none'
+                            })
+                        ),
+                        h('div', { className: 'flex justify-end gap-3 pt-2 border-t border-[#2a2a2a]' },
+                            h('button', {
+                                type: 'button',
+                                onClick: onClose,
+                                className: 'px-5 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-[#2a2a2a] active:bg-[#2a2a2a] rounded-lg transition touch-target'
+                            }, 'Cancel'),
+                            h('button', {
+                                type: 'submit',
+                                className: 'px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-700 text-white text-sm font-medium rounded-lg transition shadow-lg shadow-blue-600/30 touch-target'
+                            }, 'Save Settings')
+                        )
+                    )
+                )
+            );
+        }
+
+        // ----- App -----
+        function App() {
+            const [sidebarOpen, setSidebarOpen] = React.useState(false);
+            const [settingsOpen, setSettingsOpen] = React.useState(false);
+            const [showClearConfirm, setShowClearConfirm] = React.useState(false);
+
+            const {
+                conversations,
+                currentConversationId,
+                currentMessages,
+                isLoading,
+                isConnected,
+                settings,
+                createNewChat,
+                deleteConversation,
+                switchConversation,
+                sendMessage,
+                clearCurrentChat,
+                updateSettings,
+                testConnection,
+                getConversationTitle,
+            } = useChat();
+
+            const closeSidebar = () => setSidebarOpen(false);
+
+            const handleNewChat = () => { createNewChat();
+                closeSidebar(); };
+            const handleSwitchChat = (id) => { switchConversation(id);
+                closeSidebar(); };
+            const handleDeleteChat = (id) => { deleteConversation(id);
+                closeSidebar(); };
+            const handleClearChat = () => {
+                if (currentMessages.length === 0) return;
+                setShowClearConfirm(true);
+            };
+            const confirmClear = () => { clearCurrentChat();
+                setShowClearConfirm(false); };
+
+            return h('div', { className: 'flex h-screen w-screen bg-[#0d0d0d] text-gray-200 overflow-hidden' },
+                h(Sidebar, {
+                    conversations,
+                    currentId: currentConversationId,
+                    onNewChat: handleNewChat,
+                    onSwitchChat: handleSwitchChat,
+                    onDeleteChat: handleDeleteChat,
+                    onOpenSettings: () => setSettingsOpen(true),
+                    isOpen: sidebarOpen,
+                    onClose: closeSidebar
+                }),
+                h('div', { className: 'flex-1 flex flex-col min-w-0 bg-[#141414] relative' },
+                    h('header', { className: 'app-header flex items-center justify-between px-3 sm:px-4 py-2.5 border-b border-[#2a2a2a] bg-[#141414] shrink-0 safe-top' },
+                        h('div', { className: 'flex items-center gap-2.5 min-w-0' },
+                            h('button', {
+                                onClick: () => setSidebarOpen(true),
+                                className: 'md:hidden text-gray-400 hover:text-white p-2 touch-target transition'
+                            }, h('i', { className: 'fas fa-bars text-lg' })),
+                            h('h1', { className: 'text-base sm:text-lg font-semibold text-white truncate' },
+                                currentConversationId ? getConversationTitle(currentConversationId) : 'AI Chatbox'
+                            )
+                        ),
+                        h('div', { className: 'flex items-center gap-1.5 sm:gap-3' },
+                            h(StatusIndicator, { connected: isConnected }),
+                            h('button', {
+                                onClick: handleClearChat,
+                                className: 'text-gray-400 hover:text-white p-2 touch-target transition rounded-lg hover:bg-[#2a2a2a] active:bg-[#2a2a2a]',
+                                disabled: currentMessages.length === 0,
+                                'aria-label': 'Clear chat'
+                            }, h('i', { className: 'fas fa-eraser text-sm' })),
+                            h('button', {
+                                onClick: () => setSettingsOpen(true),
+                                className: 'text-gray-400 hover:text-white p-2 touch-target transition rounded-lg hover:bg-[#2a2a2a] active:bg-[#2a2a2a]',
+                                'aria-label': 'Settings'
+                            }, h('i', { className: 'fas fa-sliders-h text-sm' }))
+                        )
+                    ),
+                    h(MessageList, { messages: currentMessages, isLoading }),
+                    h(ChatInput, { onSend: sendMessage, disabled: isLoading || !isConnected }),
+                    showClearConfirm && h('div', { className: 'absolute inset-0 bg-black/60 flex items-center justify-center z-50 p-4' },
+                        h('div', { className: 'bg-[#1e1e1e] rounded-xl p-5 max-w-sm w-full border border-[#2a2a2a] shadow-2xl' },
+                            h('h3', { className: 'text-lg font-semibold text-white mb-2' }, 'Clear chat?'),
+                            h('p', { className: 'text-gray-400 text-sm mb-5' }, 'This will remove all messages in the current conversation.'),
+                            h('div', { className: 'flex justify-end gap-3' },
+                                h('button', {
+                                    onClick: () => setShowClearConfirm(false),
+                                    className: 'px-4 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-[#2a2a2a] active:bg-[#2a2a2a] transition touch-target'
+                                }, 'Cancel'),
+                                h('button', {
+                                    onClick: confirmClear,
+                                    className: 'px-4 py-2.5 rounded-lg text-sm bg-red-600 hover:bg-red-700 active:bg-red-700 text-white transition touch-target'
+                                }, 'Clear')
+                            )
+                        )
+                    )
+                ),
+                h(SettingsModal, {
+                    isOpen: settingsOpen,
+                    onClose: () => setSettingsOpen(false),
+                    settings,
+                    onSave: updateSettings,
+                    onTest: testConnection,
+                    isConnected
+                })
+            );
+        }
+
+        // ----- mount -----
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(h(React.StrictMode, null, h(App)));
+    </script>
 </body>
 </html>
