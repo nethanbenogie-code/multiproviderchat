@@ -52,7 +52,10 @@
         const url = baseUrl.replace(/\/+$/, '') + '/v1/chat/completions';
         const resp = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
           body: JSON.stringify(payload),
           signal: AbortSignal.timeout(120000),
         });
@@ -68,7 +71,10 @@
       async test(baseUrl) {
         try {
           const url = baseUrl.replace(/\/+$/, '') + '/v1/models';
-          const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
+          const resp = await fetch(url, {
+            headers: { 'ngrok-skip-browser-warning': 'true' },
+            signal: AbortSignal.timeout(5000),
+          });
           return resp.ok;
         } catch (_) { return false; }
       }
