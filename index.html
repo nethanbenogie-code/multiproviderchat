@@ -46,10 +46,10 @@
     // ----- helpers -----
     const h = React.createElement;
 
-    // ----- api -----
+    // ----- api (LM Studio / OpenAI-compatible) -----
     const api = {
       async chat(baseUrl, payload) {
-        const url = baseUrl.replace(/\/+$/, '') + '/api/chat';
+        const url = baseUrl.replace(/\/+$/, '') + '/v1/chat/completions';
         const resp = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -61,12 +61,13 @@
           throw new Error(text || `HTTP ${resp.status}`);
         }
         const data = await resp.json();
-        if (!data.response) throw new Error('Invalid response from server');
-        return data.response;
+        const content = data?.choices?.[0]?.message?.content;
+        if (content == null) throw new Error('Invalid response from server');
+        return content;
       },
       async test(baseUrl) {
         try {
-          const url = baseUrl.replace(/\/+$/, '') + '/api/health';
+          const url = baseUrl.replace(/\/+$/, '') + '/v1/models';
           const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
           return resp.ok;
         } catch (_) { return false; }
@@ -77,7 +78,7 @@
     const STORAGE_KEY = 'ai-chatbox-data';
     const SETTINGS_KEY = 'ai-chatbox-settings';
     const DEFAULT_SETTINGS = {
-      apiUrl: '',
+      apiUrl: 'http://localhost:1234',
       model: 'local-model',
       temperature: 0.7,
       maxTokens: 2048,
@@ -222,15 +223,21 @@
         try {
           const conv = state.conversations.find(c => c.id === convId);
           const history = (conv?.messages || []).map(m => ({ role: m.role, content: m.content }));
+
+          // Build OpenAI-style messages array: system + history + new user message
+          const messages = [];
+          if (settings.systemPrompt && settings.systemPrompt.trim()) {
+            messages.push({ role: 'system', content: settings.systemPrompt });
+          }
+          messages.push(...history);
+          messages.push({ role: 'user', content: content.trim() });
+
           const payload = {
-            message: content.trim(),
-            history,
-            settings: {
-              model: settings.model,
-              temperature: settings.temperature,
-              maxTokens: settings.maxTokens,
-              systemPrompt: settings.systemPrompt,
-            },
+            model: settings.model || 'local-model',
+            messages,
+            temperature: settings.temperature,
+            max_tokens: settings.maxTokens,
+            stream: false,
           };
 
           const response = await api.chat(settings.apiUrl, payload);
@@ -500,10 +507,12 @@
 
       const handleTest = async () => {
         if (!form.apiUrl) return;
+        // Persist first so onTest reads the latest URL
+        onSave(form);
         setTesting(true);
         setTestResult(null);
         try {
-          const ok = await onTest();
+          const ok = await api.test(form.apiUrl);
           setTestResult(ok);
         } catch (_) { setTestResult(false); }
         finally { setTesting(false); }
@@ -529,11 +538,11 @@
                 name: 'apiUrl',
                 value: form.apiUrl || '',
                 onChange: handleChange,
-                placeholder: 'https://your-ngrok-url.ngrok.io',
+                placeholder: 'http://localhost:1234',
                 className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition',
                 required: true
               }),
-              h('p', { className: 'text-xs text-gray-500 mt-1.5' }, 'Your ngrok public URL (e.g. https://abc123.ngrok.io)')
+              h('p', { className: 'text-xs text-gray-500 mt-1.5' }, 'LM Studio server base URL — no /v1 suffix (e.g. http://localhost:1234)')
             ),
             h('div', { className: 'flex items-center gap-3' },
               h('button', {
@@ -555,9 +564,10 @@
                 name: 'model',
                 value: form.model || '',
                 onChange: handleChange,
-                placeholder: 'local-model',
+                placeholder: 'google/gemma-3-4b',
                 className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition'
-              })
+              }),
+              h('p', { className: 'text-xs text-gray-500 mt-1.5' }, 'Match the model id loaded in LM Studio (see its Server tab). LM Studio is usually lenient if left default.')
             ),
             h('div', null,
               h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' },
