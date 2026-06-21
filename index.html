@@ -3,218 +3,221 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>AI Chatbox</title>
-    <script src="https://cdn.tailwindcss.com">
-    </script>
+    <title>NEURA · AI Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        :root {
+            --bg: #04060c;
+            --panel: rgba(9, 15, 26, 0.82);
+            --cyan: #22d3ee;
+            --cyan-dim: #0e7490;
+            --violet: #a78bfa;
+            --ink: #d8f2f9;
+            --muted: #6f93a0;
+            --line: rgba(34, 211, 238, 0.18);
+            --line-strong: rgba(34, 211, 238, 0.45);
+            --glow: rgba(34, 211, 238, 0.55);
         }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background: #0d0d0d;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             height: 100vh;
             overflow: hidden;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
         }
-        #root {
-            height: 100vh;
-            display: flex;
-            background: #0d0d0d;
+        /* animated grid + nebula glow */
+        body::before {
+            content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                linear-gradient(rgba(34,211,238,0.045) 1px, transparent 1px) 0 0 / 42px 42px,
+                linear-gradient(90deg, rgba(34,211,238,0.045) 1px, transparent 1px) 0 0 / 42px 42px,
+                radial-gradient(900px 500px at 75% -10%, rgba(34,211,238,0.10), transparent 60%),
+                radial-gradient(700px 500px at 10% 110%, rgba(167,139,250,0.08), transparent 60%);
+            animation: gridDrift 16s linear infinite;
         }
-        ::-webkit-scrollbar {
-            width: 4px;
+        @keyframes gridDrift { to { background-position: 0 42px, 42px 0, 0 0, 0 0; } }
+        /* scanlines */
+        body::after {
+            content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background: repeating-linear-gradient(transparent 0 2px, rgba(0,0,0,0.16) 2px 3px);
+            opacity: 0.45;
         }
-        ::-webkit-scrollbar-track {
-            background: transparent;
+        #root { position: relative; z-index: 1; height: 100vh; display: flex; background: transparent; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
+
+        .display { font-family: 'Orbitron', sans-serif; letter-spacing: 0.12em; }
+        .mono { font-family: 'Share Tech Mono', monospace; letter-spacing: 0.04em; }
+
+        /* glass HUD surfaces */
+        .hud-panel {
+            background: linear-gradient(180deg, rgba(11,18,30,0.86), rgba(5,8,15,0.9));
+            border: 1px solid var(--line);
+            backdrop-filter: blur(9px);
+            -webkit-backdrop-filter: blur(9px);
         }
-        ::-webkit-scrollbar-thumb {
-            background: #3b3b3b;
-            border-radius: 999px;
+        .hud-bar {
+            background: linear-gradient(180deg, rgba(8,14,24,0.9), rgba(5,9,16,0.75));
+            border-bottom: 1px solid var(--line);
+            box-shadow: 0 1px 0 rgba(34,211,238,0.08), 0 10px 30px -20px var(--glow);
+            position: relative;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
+        /* sweeping scan line under header */
+        .hud-bar::after {
+            content: ""; position: absolute; left: 0; bottom: -1px; height: 1px; width: 40%;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            filter: drop-shadow(0 0 6px var(--glow));
+            animation: sweep 4.5s ease-in-out infinite;
+        }
+        @keyframes sweep { 0%{left:-40%} 100%{left:100%} }
+
+        /* corner brackets */
+        .bracket { position: relative; }
+        .bracket::before, .bracket::after {
+            content: ""; position: absolute; width: 14px; height: 14px; pointer-events: none;
+            border-color: var(--line-strong); opacity: 0.8;
+        }
+        .bracket::before { top: 6px; left: 6px; border-left: 1px solid; border-top: 1px solid; }
+        .bracket::after { bottom: 6px; right: 6px; border-right: 1px solid; border-bottom: 1px solid; }
+
+        /* buttons */
+        .neon-btn {
+            border: 1px solid var(--line); background: rgba(34,211,238,0.06);
+            color: var(--cyan); text-transform: uppercase; letter-spacing: 0.09em;
+            font-family: 'Share Tech Mono', monospace; transition: all .18s ease;
+        }
+        .neon-btn:hover:not(:disabled) { background: rgba(34,211,238,0.15); box-shadow: 0 0 16px var(--glow); color: #b6f7ff; }
+        .neon-btn:disabled { opacity: .4; }
+        .neon-primary {
+            border: 1px solid var(--line-strong);
+            background: linear-gradient(135deg, rgba(34,211,238,0.25), rgba(167,139,250,0.22));
+            color: #eaffff; text-transform: uppercase; letter-spacing: 0.09em;
+            font-family: 'Share Tech Mono', monospace; box-shadow: 0 0 16px rgba(34,211,238,0.18); transition: all .18s ease;
+        }
+        .neon-primary:hover { box-shadow: 0 0 26px var(--glow); }
+        .icon-btn { color: var(--muted); transition: all .18s ease; }
+        .icon-btn:hover:not(:disabled) { color: var(--cyan); text-shadow: 0 0 10px var(--glow); }
+        .icon-btn:disabled { opacity: .35; }
+
+        .send-btn {
+            background: radial-gradient(circle at 32% 28%, var(--cyan), var(--cyan-dim));
+            color: #021016; box-shadow: 0 0 20px var(--glow); transition: all .18s ease;
+        }
+        .send-btn:hover { box-shadow: 0 0 30px var(--glow); transform: translateY(-1px); }
+        .send-btn:disabled { background: rgba(34,211,238,0.08); color: var(--muted); box-shadow: none; transform: none; }
+
+        /* inputs */
+        .sci-input {
+            background: rgba(3,7,13,0.9); border: 1px solid var(--line); color: var(--ink);
+            font-family: 'Share Tech Mono', monospace; transition: all .18s ease;
+        }
+        .sci-input::placeholder { color: #44606b; }
+        .sci-input:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(34,211,238,0.22), 0 0 18px rgba(34,211,238,0.16); }
+
+        /* message bubbles — angular HUD shards (filter glow so it survives clip-path) */
+        .msg-ai {
+            background: rgba(11,19,30,0.8); border: 1px solid var(--line); border-left: 2px solid var(--cyan);
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%);
+            filter: drop-shadow(0 0 10px rgba(34,211,238,0.10));
+        }
+        .msg-user {
+            background: linear-gradient(135deg, rgba(34,211,238,0.20), rgba(167,139,250,0.18));
+            border: 1px solid var(--line-strong); color: #eafdff;
+            clip-path: polygon(11px 0, 100% 0, 100% 100%, 0 100%, 0 11px);
+            filter: drop-shadow(0 0 12px rgba(34,211,238,0.16));
         }
 
-        .msg-enter {
-            animation: fadeSlideUp 0.25s ease-out forwards;
+        /* hexagon avatars */
+        .hex {
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex; align-items: center; justify-content: center;
         }
-        @keyframes fadeSlideUp {
-            0% {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        .hex-ai { background: linear-gradient(160deg, #0b2a33, #06151c); border: 1px solid var(--line-strong); filter: drop-shadow(0 0 8px rgba(34,211,238,0.4)); }
+        .hex-user { background: linear-gradient(160deg, #1a2350, #2a1d50); filter: drop-shadow(0 0 8px rgba(167,139,250,0.4)); }
 
-        .typing-dot {
-            animation: typingPulse 1.2s infinite ease-in-out;
+        /* status dot with ping */
+        .status-dot { width: 9px; height: 9px; border-radius: 999px; position: relative; }
+        .status-dot.on { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        .status-dot.on::after {
+            content: ""; position: absolute; inset: -5px; border-radius: 999px; border: 1px solid var(--cyan); animation: ping 1.7s ease-out infinite;
         }
-        .typing-dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-        .typing-dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-        @keyframes typingPulse {
-            0%,
-            60%,
-            100% {
-                transform: translateY(0);
-                opacity: 0.4;
-            }
-            30% {
-                transform: translateY(-6px);
-                opacity: 1;
-            }
-        }
+        @keyframes ping { from { transform: scale(.5); opacity: .9; } to { transform: scale(1.9); opacity: 0; } }
+        .status-dot.off { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
 
-        .sidebar-transition {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s ease;
-        }
+        /* processing bars */
+        .proc-bar { width: 3px; height: 16px; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); animation: proc 1s ease-in-out infinite; }
+        .proc-bar:nth-child(2) { animation-delay: .12s; }
+        .proc-bar:nth-child(3) { animation-delay: .24s; }
+        .proc-bar:nth-child(4) { animation-delay: .36s; }
+        .proc-bar:nth-child(5) { animation-delay: .48s; }
+        @keyframes proc { 0%,100% { transform: scaleY(.35); opacity: .5; } 50% { transform: scaleY(1); opacity: 1; } }
 
-        /* Mobile sidebar */
+        .msg-enter { animation: fadeSlideUp 0.28s cubic-bezier(0.2,0.7,0.2,1) forwards; }
+        @keyframes fadeSlideUp { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+
+        /* sidebar mechanics (unchanged behaviour) */
         .sidebar-mobile {
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            z-index: 60;
-            width: 280px;
-            transform: translateX(-100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: fixed; top: 0; left: 0; bottom: 0; z-index: 60; width: 286px;
+            transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
         }
-        .sidebar-mobile.open {
-            transform: translateX(0);
-        }
-
+        .sidebar-mobile.open { transform: translateX(0); }
         .sidebar-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.65);
-            z-index: 50;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            backdrop-filter: blur(2px);
-            -webkit-backdrop-filter: blur(2px);
+            position: fixed; inset: 0; background: rgba(2,4,8,0.7); z-index: 50; display: none; opacity: 0;
+            transition: opacity 0.3s ease; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
         }
-        .sidebar-overlay.open {
-            display: block;
-            opacity: 1;
-        }
-
-        /* Desktop sidebar */
+        .sidebar-overlay.open { display: block; opacity: 1; }
         @media (min-width: 768px) {
-            .sidebar-mobile {
-                position: relative;
-                transform: translateX(0) !important;
-                width: 280px;
-                z-index: auto;
-            }
-            .sidebar-overlay {
-                display: none !important;
-            }
-            .sidebar-close-btn {
-                display: none !important;
-            }
+            .sidebar-mobile { position: relative; transform: translateX(0) !important; width: 286px; z-index: auto; }
+            .sidebar-overlay { display: none !important; }
+            .sidebar-close-btn { display: none !important; }
         }
 
-        /* Touch-friendly inputs */
-        input,
-        textarea,
-        button {
-            touch-action: manipulation;
-        }
+        .chan-item { border: 1px solid transparent; transition: all .15s ease; }
+        .chan-item:hover { background: rgba(34,211,238,0.06); border-color: var(--line); }
+        .chan-item.active { background: rgba(34,211,238,0.10); border-color: var(--line-strong); box-shadow: inset 0 0 18px rgba(34,211,238,0.06); }
 
-        textarea {
-            -webkit-overflow-scrolling: touch;
-        }
-
-        /* Better scroll on mobile */
-        .scroll-container {
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
-        }
-
-        /* Safe area insets for notch phones */
+        input, textarea, button { touch-action: manipulation; }
+        .scroll-container { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         @supports (padding: max(0px)) {
-            .safe-bottom {
-                padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
-            }
-            .safe-top {
-                padding-top: max(env(safe-area-inset-top, 0px), 12px);
-            }
+            .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px); }
+            .safe-top { padding-top: max(env(safe-area-inset-top, 0px), 12px); }
         }
-
-        /* Prevent zoom on double-tap */
-        button,
-        input,
-        textarea {
-            font-size: 16px !important;
-        }
-
-        /* Message bubble max-width for mobile */
-        .message-bubble {
-            max-width: 85%;
-        }
-        @media (min-width: 480px) {
-            .message-bubble {
-                max-width: 75%;
-            }
-        }
-
-        /* Smooth height transition for textarea */
-        .chat-textarea {
-            min-height: 52px;
-            max-height: 160px;
-            transition: height 0.1s ease;
-        }
-
-        /* PWA-style header */
-        .app-header {
-            min-height: 56px;
-        }
-
-        /* Better touch targets */
-        .touch-target {
-            min-height: 44px;
-            min-width: 44px;
-        }
+        button, input, textarea { font-size: 16px !important; }
+        .message-bubble { max-width: 86%; }
+        @media (min-width: 480px) { .message-bubble { max-width: 74%; } }
+        .chat-textarea { min-height: 52px; max-height: 160px; transition: height 0.1s ease; }
+        .app-header { min-height: 58px; }
+        .touch-target { min-height: 44px; min-width: 44px; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <!-- React from CDN -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js">
-    </script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js">
-    </script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
     <script>
-        // ----- helpers -----
         const h = React.createElement;
 
         // ----- api (Ollama / LM Studio / OpenAI-compatible) -----
-        // NOTE: no custom request headers here. Ollama rejects unknown headers
-        // (e.g. ngrok-skip-browser-warning) in the CORS preflight, which causes
-        // "Failed to fetch". Only send the headers the server expects.
+        // No custom request headers: Ollama rejects unknown headers in the CORS
+        // preflight, which causes "Failed to fetch".
         const api = {
             async chat(baseUrl, payload) {
                 const url = baseUrl.replace(/\/+$/, '') + '/v1/chat/completions';
                 const resp = await fetch(url, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                     signal: AbortSignal.timeout(120000),
                 });
@@ -230,13 +233,10 @@
             async test(baseUrl) {
                 try {
                     const url = baseUrl.replace(/\/+$/, '') + '/v1/models';
-                    const resp = await fetch(url, {
-                        signal: AbortSignal.timeout(5000),
-                    });
+                    const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
                     return resp.ok;
                 } catch (_) { return false; }
             },
-            // Optional helper: list models so you can confirm what's installed.
             async listModels(baseUrl) {
                 try {
                     const url = baseUrl.replace(/\/+$/, '') + '/v1/models';
@@ -248,42 +248,32 @@
             }
         };
 
-        // ----- useChat hook -----
+        // ----- state / settings -----
         const STORAGE_KEY = 'ai-chatbox-data';
         const SETTINGS_KEY = 'ai-chatbox-settings';
         const DEFAULT_SETTINGS = {
-            apiUrl: 'http://localhost:11434',   // Ollama default (LM Studio is :1234)
-            model: 'llama3.2',                  // change to whatever you've pulled
+            apiUrl: 'http://localhost:11434',
+            model: 'llama3.2',
             temperature: 0.7,
             maxTokens: 2048,
             systemPrompt: 'You are a helpful assistant.',
         };
 
         function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-
-        function getDefaultConversation() {
-            return { id: generateId(), title: 'New Chat', messages: [], createdAt: Date.now() };
-        }
+        function getDefaultConversation() { return { id: generateId(), title: 'New Channel', messages: [], createdAt: Date.now() }; }
 
         function loadState() {
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) {
-                    const data = JSON.parse(raw);
-                    if (data.conversations && data.currentId) return data;
-                }
+                if (raw) { const data = JSON.parse(raw); if (data.conversations && data.currentId) return data; }
             } catch (_) {}
             const conv = getDefaultConversation();
             return { conversations: [conv], currentId: conv.id };
         }
-
         function loadSettings() {
             try {
                 const raw = localStorage.getItem(SETTINGS_KEY);
-                if (raw) {
-                    const s = JSON.parse(raw);
-                    return { ...DEFAULT_SETTINGS, ...s };
-                }
+                if (raw) { const s = JSON.parse(raw); return { ...DEFAULT_SETTINGS, ...s }; }
             } catch (_) {}
             return { ...DEFAULT_SETTINGS };
         }
@@ -294,45 +284,25 @@
             const [isLoading, setIsLoading] = React.useState(false);
             const [isConnected, setIsConnected] = React.useState(false);
 
-            const currentConversation = React.useMemo(() => {
-                return state.conversations.find(c => c.id === state.currentId) || null;
-            }, [state]);
+            const currentConversation = React.useMemo(() => state.conversations.find(c => c.id === state.currentId) || null, [state]);
+            const currentMessages = React.useMemo(() => currentConversation?.messages || [], [currentConversation]);
 
-            const currentMessages = React.useMemo(() => {
-                return currentConversation?.messages || [];
-            }, [currentConversation]);
-
+            React.useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {} }, [state]);
+            React.useEffect(() => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {} }, [settings]);
             React.useEffect(() => {
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
-            }, [state]);
-
-            React.useEffect(() => {
-                try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {}
-            }, [settings]);
-
-            React.useEffect(() => {
-                if (settings.apiUrl) {
-                    testConnection().then(ok => setIsConnected(ok));
-                } else {
-                    setIsConnected(false);
-                }
+                if (settings.apiUrl) testConnection().then(ok => setIsConnected(ok));
+                else setIsConnected(false);
             }, [settings.apiUrl]);
 
             const createNewChat = React.useCallback(() => {
                 const conv = getDefaultConversation();
-                setState(prev => ({
-                    conversations: [conv, ...prev.conversations],
-                    currentId: conv.id,
-                }));
+                setState(prev => ({ conversations: [conv, ...prev.conversations], currentId: conv.id }));
             }, []);
 
             const deleteConversation = React.useCallback((id) => {
                 setState(prev => {
                     const filtered = prev.conversations.filter(c => c.id !== id);
-                    if (filtered.length === 0) {
-                        const fresh = getDefaultConversation();
-                        return { conversations: [fresh], currentId: fresh.id };
-                    }
+                    if (filtered.length === 0) { const fresh = getDefaultConversation(); return { conversations: [fresh], currentId: fresh.id }; }
                     let nextId = prev.currentId;
                     if (prev.currentId === id) nextId = filtered[0].id;
                     return { conversations: filtered, currentId: nextId };
@@ -340,630 +310,318 @@
             }, []);
 
             const switchConversation = React.useCallback((id) => {
-                setState(prev => {
-                    if (prev.conversations.some(c => c.id === id)) {
-                        return { ...prev, currentId: id };
-                    }
-                    return prev;
-                });
+                setState(prev => prev.conversations.some(c => c.id === id) ? { ...prev, currentId: id } : prev);
             }, []);
 
             const updateConversationTitle = React.useCallback((id, title) => {
-                setState(prev => ({
-                    ...prev,
-                    conversations: prev.conversations.map(c =>
-                        c.id === id ? { ...c, title } : c
-                    ),
-                }));
+                setState(prev => ({ ...prev, conversations: prev.conversations.map(c => c.id === id ? { ...c, title } : c) }));
             }, []);
 
             const getConversationTitle = React.useCallback((id) => {
                 const conv = state.conversations.find(c => c.id === id);
-                if (!conv) return 'Chat';
-                if (conv.title && conv.title !== 'New Chat') return conv.title;
+                if (!conv) return 'Channel';
+                if (conv.title && conv.title !== 'New Channel') return conv.title;
                 const firstMsg = conv.messages.find(m => m.role === 'user');
-                if (firstMsg) {
-                    const snippet = firstMsg.content.slice(0, 40);
-                    return snippet + (firstMsg.content.length > 40 ? '…' : '');
-                }
-                return 'New Chat';
+                if (firstMsg) { const s = firstMsg.content.slice(0, 40); return s + (firstMsg.content.length > 40 ? '…' : ''); }
+                return 'New Channel';
             }, [state.conversations]);
 
             const clearCurrentChat = React.useCallback(() => {
-                setState(prev => {
-                    const updated = prev.conversations.map(c =>
-                        c.id === prev.currentId ? { ...c, messages: [] } : c
-                    );
-                    return { ...prev, conversations: updated };
-                });
+                setState(prev => ({ ...prev, conversations: prev.conversations.map(c => c.id === prev.currentId ? { ...c, messages: [] } : c) }));
             }, []);
 
             const sendMessage = React.useCallback(async (content) => {
                 if (!content.trim()) return;
-                if (!settings.apiUrl) {
-                    alert('Please configure the API URL in Settings.');
-                    return;
-                }
-
+                if (!settings.apiUrl) { alert('Please configure the API URL in Settings.'); return; }
                 const convId = state.currentId;
-                setState(prev => {
-                    const updated = prev.conversations.map(c =>
-                        c.id === convId ?
-                        { ...c, messages: [...c.messages, { role: 'user', content: content.trim(), timestamp: Date
-                                    .now() }] } :
-                        c
-                    );
-                    return { ...prev, conversations: updated };
-                });
-
+                setState(prev => ({ ...prev, conversations: prev.conversations.map(c => c.id === convId ? { ...c, messages: [...c.messages, { role: 'user', content: content.trim(), timestamp: Date.now() }] } : c) }));
                 setIsLoading(true);
-
                 try {
                     const conv = state.conversations.find(c => c.id === convId);
                     const history = (conv?.messages || []).map(m => ({ role: m.role, content: m.content }));
-
                     const messages = [];
-                    if (settings.systemPrompt && settings.systemPrompt.trim()) {
-                        messages.push({ role: 'system', content: settings.systemPrompt });
-                    }
+                    if (settings.systemPrompt && settings.systemPrompt.trim()) messages.push({ role: 'system', content: settings.systemPrompt });
                     messages.push(...history);
                     messages.push({ role: 'user', content: content.trim() });
-
-                    const payload = {
-                        model: settings.model || 'llama3.2',
-                        messages,
-                        temperature: Number(settings.temperature) || 0.7,
-                        max_tokens: parseInt(settings.maxTokens, 10) || 2048,
-                        stream: false,
-                    };
-
+                    const payload = { model: settings.model || 'llama3.2', messages, temperature: Number(settings.temperature) || 0.7, max_tokens: parseInt(settings.maxTokens, 10) || 2048, stream: false };
                     const response = await api.chat(settings.apiUrl, payload);
-
-                    setState(prev => {
-                        const updated = prev.conversations.map(c =>
-                            c.id === convId ?
-                            { ...c, messages: [...c.messages, { role: 'assistant', content: response,
-                                    timestamp: Date.now() }] } :
-                            c
-                        );
-                        return { ...prev, conversations: updated };
-                    });
-
+                    setState(prev => ({ ...prev, conversations: prev.conversations.map(c => c.id === convId ? { ...c, messages: [...c.messages, { role: 'assistant', content: response, timestamp: Date.now() }] } : c) }));
                     const convAfter = state.conversations.find(c => c.id === convId);
                     if (convAfter && convAfter.messages.length === 1) {
                         const title = content.trim().slice(0, 40) + (content.trim().length > 40 ? '…' : '');
                         updateConversationTitle(convId, title);
                     }
-
                 } catch (err) {
                     console.error('Send message error:', err);
                     const errorMsg = err.message || 'Failed to get response from AI.';
-                    setState(prev => {
-                        const updated = prev.conversations.map(c =>
-                            c.id === convId ?
-                            { ...c, messages: [...c.messages, { role: 'assistant', content: `⚠️ ${errorMsg}`,
-                                    timestamp: Date.now() }] } :
-                            c
-                        );
-                        return { ...prev, conversations: updated };
-                    });
-                } finally {
-                    setIsLoading(false);
-                }
+                    setState(prev => ({ ...prev, conversations: prev.conversations.map(c => c.id === convId ? { ...c, messages: [...c.messages, { role: 'assistant', content: `⚠ SIGNAL LOST — ${errorMsg}`, timestamp: Date.now() }] } : c) }));
+                } finally { setIsLoading(false); }
             }, [state, settings, updateConversationTitle]);
 
             const testConnection = React.useCallback(async () => {
                 if (!settings.apiUrl) return false;
-                try {
-                    const ok = await api.test(settings.apiUrl);
-                    setIsConnected(ok);
-                    return ok;
-                } catch (_) {
-                    setIsConnected(false);
-                    return false;
-                }
+                try { const ok = await api.test(settings.apiUrl); setIsConnected(ok); return ok; }
+                catch (_) { setIsConnected(false); return false; }
             }, [settings.apiUrl]);
 
-            const updateSettings = React.useCallback((newSettings) => {
-                setSettings(prev => ({ ...prev, ...newSettings }));
-            }, []);
+            const updateSettings = React.useCallback((newSettings) => { setSettings(prev => ({ ...prev, ...newSettings })); }, []);
 
-            return {
-                conversations: state.conversations,
-                currentConversationId: state.currentId,
-                currentMessages,
-                isLoading,
-                isConnected,
-                settings,
-                createNewChat,
-                deleteConversation,
-                switchConversation,
-                sendMessage,
-                clearCurrentChat,
-                updateSettings,
-                testConnection,
-                getConversationTitle,
-            };
+            return { conversations: state.conversations, currentConversationId: state.currentId, currentMessages, isLoading, isConnected, settings, createNewChat, deleteConversation, switchConversation, sendMessage, clearCurrentChat, updateSettings, testConnection, getConversationTitle };
         }
 
         // ----- components -----
-
         function Message({ role, content, timestamp }) {
             const isUser = role === 'user';
-            const timeStr = timestamp ?
-                new Date(timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) :
-                '';
-
-            return h('div', {
-                className: `flex items-start gap-2.5 px-2 sm:px-3 py-2.5 msg-enter ${isUser ? 'flex-row-reverse' : ''}`
-            },
-                h('div', {
-                    className: `w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isUser ? 'bg-blue-600' : 'bg-[#2a2a2a]'} touch-target`
-                }, h('span', { className: 'text-sm' }, isUser ? '👤' : '🤖')),
-                h('div', {
-                    className: `message-bubble rounded-2xl px-3.5 py-2.5 ${isUser ? 'bg-blue-600/90 text-white rounded-tr-none' : 'bg-[#1e1e1e] text-gray-200 rounded-tl-none'}`
-                },
-                    h('div', { className: 'whitespace-pre-wrap break-words text-sm leading-relaxed' }, content),
-                    h('div', { className: `text-[10px] mt-1 ${isUser ? 'text-blue-200/70' : 'text-gray-500'}` }, timeStr)
+            const timeStr = timestamp ? new Date(timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '';
+            return h('div', { className: `flex items-start gap-3 px-2 sm:px-3 py-3 msg-enter ${isUser ? 'flex-row-reverse' : ''}` },
+                h('div', { className: `hex w-9 h-9 shrink-0 ${isUser ? 'hex-user' : 'hex-ai'}` },
+                    h('i', { className: `fas ${isUser ? 'fa-user' : 'fa-microchip'} text-xs ${isUser ? 'text-violet-200' : 'text-cyan-300'}` })
+                ),
+                h('div', { className: `message-bubble px-4 py-3 ${isUser ? 'msg-user' : 'msg-ai'}` },
+                    h('div', { className: 'flex items-center gap-2 mb-1' },
+                        h('span', { className: `mono text-[10px] uppercase tracking-widest ${isUser ? 'text-cyan-100/80' : 'text-cyan-400/80'}` }, isUser ? 'OPERATOR' : 'NEURA'),
+                        timeStr && h('span', { className: 'mono text-[9px] text-cyan-500/40' }, timeStr)
+                    ),
+                    h('div', { className: 'whitespace-pre-wrap break-words text-sm leading-relaxed' }, content)
                 )
             );
         }
 
         function MessageList({ messages, isLoading }) {
             const bottomRef = React.useRef(null);
-            const containerRef = React.useRef(null);
-
-            React.useEffect(() => {
-                bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            }, [messages, isLoading]);
-
+            React.useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, isLoading]);
             const children = [];
             if (messages.length === 0) {
                 children.push(
-                    h('div', { key: 'empty', className: 'flex flex-col items-center justify-center h-full text-gray-500 select-none px-4' },
-                        h('div', { className: 'text-5xl mb-4 opacity-20' }, '🤖'),
-                        h('p', { className: 'text-lg font-medium text-gray-400' }, 'Start a conversation'),
-                        h('p', { className: 'text-sm text-gray-600 mt-1 text-center' }, 'Send a message to begin chatting with AI.')
+                    h('div', { key: 'empty', className: 'flex flex-col items-center justify-center h-full select-none px-4' },
+                        h('div', { className: 'hex w-20 h-20 hex-ai mb-5' }, h('i', { className: 'fas fa-brain text-2xl text-cyan-300' })),
+                        h('p', { className: 'display text-lg text-cyan-200 uppercase' }, 'Awaiting Input'),
+                        h('p', { className: 'mono text-xs text-cyan-500/50 mt-2 text-center' }, '// transmit a message to initialise the link')
                     )
                 );
             } else {
-                messages.forEach((msg, idx) => {
-                    children.push(h(Message, { key: idx, role: msg.role, content: msg.content, timestamp: msg
-                            .timestamp }));
-                });
+                messages.forEach((msg, idx) => children.push(h(Message, { key: idx, role: msg.role, content: msg.content, timestamp: msg.timestamp })));
             }
             if (isLoading) {
                 children.push(
-                    h('div', { key: 'typing', className: 'flex items-start gap-2.5 px-2 sm:px-3 py-2.5 msg-enter' },
-                        h('div', { className: 'w-8 h-8 rounded-full bg-[#2a2a2a] flex items-center justify-center shrink-0' },
-                            h('span', { className: 'text-sm' }, '🤖')
-                        ),
-                        h('div', { className: 'flex items-center gap-1.5 bg-[#1e1e1e] rounded-2xl rounded-tl-none px-4 py-3' },
-                            h('span', { className: 'typing-dot w-2 h-2 bg-gray-400 rounded-full' }),
-                            h('span', { className: 'typing-dot w-2 h-2 bg-gray-400 rounded-full' }),
-                            h('span', { className: 'typing-dot w-2 h-2 bg-gray-400 rounded-full' })
+                    h('div', { key: 'typing', className: 'flex items-center gap-3 px-2 sm:px-3 py-3 msg-enter' },
+                        h('div', { className: 'hex w-9 h-9 hex-ai shrink-0' }, h('i', { className: 'fas fa-microchip text-xs text-cyan-300' })),
+                        h('div', { className: 'msg-ai px-4 py-3 flex items-center gap-3' },
+                            h('div', { className: 'flex items-end gap-1 h-4' },
+                                h('span', { className: 'proc-bar' }), h('span', { className: 'proc-bar' }), h('span', { className: 'proc-bar' }), h('span', { className: 'proc-bar' }), h('span', { className: 'proc-bar' })
+                            ),
+                            h('span', { className: 'mono text-[10px] uppercase tracking-widest text-cyan-400/70' }, 'Processing')
                         )
                     )
                 );
             }
             children.push(h('div', { key: 'bottom', ref: bottomRef }));
-
-            return h('div', {
-                ref: containerRef,
-                className: 'flex-1 overflow-y-auto px-1 sm:px-2 py-3 space-y-0.5 scroll-container'
-            }, children);
+            return h('div', { className: 'flex-1 overflow-y-auto px-1 sm:px-2 py-3 space-y-0.5 scroll-container' }, children);
         }
 
         function ChatInput({ onSend, disabled }) {
             const [input, setInput] = React.useState('');
             const textareaRef = React.useRef(null);
             const [isFocused, setIsFocused] = React.useState(false);
-
             const handleSubmit = () => {
-                const trimmed = input.trim();
-                if (!trimmed || disabled) return;
-                onSend(trimmed);
-                setInput('');
-                if (textareaRef.current) {
-                    textareaRef.current.style.height = 'auto';
-                }
+                const trimmed = input.trim(); if (!trimmed || disabled) return;
+                onSend(trimmed); setInput('');
+                if (textareaRef.current) textareaRef.current.style.height = 'auto';
             };
-
-            const handleKeyDown = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit();
-                }
-            };
-
-            const handleChange = (e) => {
-                setInput(e.target.value);
-                const el = e.target;
-                el.style.height = 'auto';
-                el.style.height = Math.min(el.scrollHeight, 160) + 'px';
-            };
-
-            React.useEffect(() => {
-                if (!disabled && textareaRef.current) {
-                    // Don't auto-focus on mobile to avoid keyboard popup
-                    if (window.innerWidth >= 768) {
-                        textareaRef.current.focus();
-                    }
-                }
-            }, [disabled]);
-
-            return h('div', { className: 'border-t border-[#2a2a2a] bg-[#141414] p-3 safe-bottom' },
+            const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } };
+            const handleChange = (e) => { setInput(e.target.value); const el = e.target; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px'; };
+            React.useEffect(() => { if (!disabled && textareaRef.current && window.innerWidth >= 768) textareaRef.current.focus(); }, [disabled]);
+            return h('div', { className: 'hud-bar p-3 safe-bottom', style: { borderBottom: 'none', borderTop: '1px solid var(--line)' } },
                 h('div', { className: 'max-w-4xl mx-auto flex items-end gap-2.5' },
                     h('div', { className: 'flex-1 relative' },
                         h('textarea', {
-                            ref: textareaRef,
-                            value: input,
-                            onChange: handleChange,
-                            onKeyDown: handleKeyDown,
-                            onFocus: () => setIsFocused(true),
-                            onBlur: () => setIsFocused(false),
-                            disabled: disabled,
-                            placeholder: disabled ? 'Connecting…' : 'Type a message…',
+                            ref: textareaRef, value: input, onChange: handleChange, onKeyDown: handleKeyDown,
+                            onFocus: () => setIsFocused(true), onBlur: () => setIsFocused(false), disabled,
+                            placeholder: disabled ? '// link offline — configure interface' : '> transmit message…',
                             rows: 1,
-                            className: `chat-textarea w-full resize-none rounded-2xl bg-[#1e1e1e] text-white placeholder-gray-500 px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 transition border ${isFocused ? 'border-blue-600 ring-2 ring-blue-600/30' : 'border-[#2a2a2a]'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`,
+                            className: `sci-input chat-textarea w-full resize-none rounded-lg px-4 py-3 pr-4 text-sm ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`,
                             style: { minHeight: '52px' }
                         })
                     ),
                     h('button', {
-                        onClick: handleSubmit,
-                        disabled: !input.trim() || disabled,
-                        className: `shrink-0 rounded-full p-3.5 touch-target transition ${input.trim() && !disabled ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 active:scale-95' : 'bg-[#2a2a2a] text-gray-500 cursor-not-allowed'}`
+                        onClick: handleSubmit, disabled: !input.trim() || disabled,
+                        className: 'send-btn shrink-0 rounded-lg p-3.5 touch-target',
+                        'aria-label': 'Send'
                     }, h('i', { className: 'fas fa-paper-plane text-sm' }))
-                )
+                ),
+                h('p', { className: 'mono text-[10px] text-center text-cyan-600/40 mt-2' }, 'ENTER ▸ SEND   ·   SHIFT+ENTER ▸ NEWLINE')
             );
         }
 
         function StatusIndicator({ connected }) {
-            return h('div', { className: 'flex items-center gap-1.5 text-xs' },
-                h('span', {
-                    className: `inline-block w-2 h-2 rounded-full ${connected ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`
-                }),
-                h('span', { className: 'text-gray-400 hidden sm:inline' }, connected ? 'Online' : 'Offline')
+            return h('div', { className: 'flex items-center gap-2 text-xs' },
+                h('span', { className: `status-dot ${connected ? 'on' : 'off'}` }),
+                h('span', { className: 'mono text-[11px] uppercase tracking-widest hidden sm:inline', style: { color: connected ? 'var(--cyan)' : '#ef4444' } }, connected ? 'Link Active' : 'Offline')
             );
         }
 
-        function Sidebar({ conversations, currentId, onNewChat, onSwitchChat, onDeleteChat, onOpenSettings, isOpen,
-            onClose }) {
+        function Sidebar({ conversations, currentId, onNewChat, onSwitchChat, onDeleteChat, onOpenSettings, isOpen, onClose }) {
             const listItems = conversations.length === 0 ?
-                h('div', { className: 'text-center text-gray-500 text-sm py-8 px-4' },
-                    'No conversations yet.', h('br'), 'Tap ', h('i', { className: 'fas fa-plus' }), ' to start.'
-                ) :
+                h('div', { className: 'mono text-center text-cyan-600/40 text-xs py-8 px-4' }, '// no channels', h('br'), 'tap + to open one') :
                 conversations.map(conv => {
                     const isActive = conv.id === currentId;
-                    const title = conv.title || 'New Chat';
+                    const title = conv.title || 'New Channel';
                     const msgCount = conv.messages.length;
                     return h('div', {
                         key: conv.id,
-                        className: `group flex items-center justify-between rounded-lg px-3 py-3 cursor-pointer transition touch-target ${isActive ? 'bg-[#2a2a2a]' : 'hover:bg-[#222] active:bg-[#2a2a2a]'}`,
+                        className: `chan-item ${isActive ? 'active' : ''} group flex items-center justify-between rounded-md px-3 py-3 cursor-pointer touch-target`,
                         onClick: () => onSwitchChat(conv.id)
                     },
-                        h('div', { className: 'flex-1 min-w-0' },
-                            h('div', { className: 'text-sm font-medium text-white truncate' }, title),
-                            h('div', { className: 'text-xs text-gray-500' }, msgCount, ' messages')
+                        h('div', { className: 'flex items-center gap-2.5 flex-1 min-w-0' },
+                            h('i', { className: `fas fa-satellite-dish text-xs ${isActive ? 'text-cyan-300' : 'text-cyan-600/50'}` }),
+                            h('div', { className: 'flex-1 min-w-0' },
+                                h('div', { className: 'text-sm font-medium text-cyan-50 truncate' }, title),
+                                h('div', { className: 'mono text-[10px] text-cyan-600/50' }, msgCount, ' packets')
+                            )
                         ),
                         h('button', {
-                            onClick: (e) => { e.stopPropagation();
-                                onDeleteChat(conv.id); },
-                            className: 'text-gray-500 hover:text-red-400 transition p-2 touch-target opacity-0 group-hover:opacity-100 active:opacity-100'
+                            onClick: (e) => { e.stopPropagation(); onDeleteChat(conv.id); },
+                            className: 'icon-btn p-2 touch-target opacity-0 group-hover:opacity-100 active:opacity-100 hover:!text-red-400'
                         }, h('i', { className: 'fas fa-trash-alt text-sm' }))
                     );
                 });
-
             return h(React.Fragment, null,
-                h('aside', {
-                    className: `sidebar-mobile flex flex-col bg-[#1a1a1a] border-r border-[#2a2a2a] h-full`
-                },
-                    h('div', { className: 'flex items-center justify-between p-4 border-b border-[#2a2a2a] safe-top' },
-                        h('h2', { className: 'text-lg font-bold text-white tracking-tight' }, 'Conversations'),
+                h('aside', { className: 'sidebar-mobile hud-panel flex flex-col h-full' },
+                    h('div', { className: 'flex items-center justify-between p-4 safe-top', style: { borderBottom: '1px solid var(--line)' } },
+                        h('div', null,
+                            h('h2', { className: 'display text-base font-bold text-cyan-200 uppercase' }, 'Channels'),
+                            h('div', { className: 'mono text-[9px] uppercase tracking-widest text-cyan-600/50' }, 'comm array')
+                        ),
                         h('div', { className: 'flex items-center gap-2' },
-                            h('button', {
-                                onClick: onNewChat,
-                                className: 'bg-[#2a2a2a] hover:bg-[#3a3a3a] active:bg-[#3a3a3a] text-white rounded-lg p-2.5 touch-target transition'
-                            }, h('i', { className: 'fas fa-plus' })),
-                            h('button', {
-                                onClick: onClose,
-                                className: 'sidebar-close-btn md:hidden text-gray-400 hover:text-white p-2.5 touch-target transition'
-                            }, h('i', { className: 'fas fa-times text-lg' }))
+                            h('button', { onClick: onNewChat, className: 'neon-btn rounded-md p-2.5 touch-target' }, h('i', { className: 'fas fa-plus' })),
+                            h('button', { onClick: onClose, className: 'sidebar-close-btn md:hidden icon-btn p-2.5 touch-target' }, h('i', { className: 'fas fa-times text-lg' }))
                         )
                     ),
                     h('div', { className: 'flex-1 overflow-y-auto p-2 space-y-1 scroll-container' }, listItems),
-                    h('div', { className: 'p-4 border-t border-[#2a2a2a] safe-bottom' },
-                        h('button', {
-                            onClick: onOpenSettings,
-                            className: 'w-full flex items-center justify-center gap-2 text-gray-400 hover:text-white hover:bg-[#2a2a2a] active:bg-[#2a2a2a] rounded-lg py-2.5 touch-target transition text-sm'
-                        },
-                            h('i', { className: 'fas fa-sliders-h' }),
-                            h('span', null, 'Settings')
+                    h('div', { className: 'p-3 safe-bottom', style: { borderTop: '1px solid var(--line)' } },
+                        h('button', { onClick: onOpenSettings, className: 'neon-btn w-full flex items-center justify-center gap-2 rounded-md py-2.5 touch-target text-sm' },
+                            h('i', { className: 'fas fa-sliders-h' }), h('span', null, 'System Config')
                         )
                     )
                 ),
-                h('div', {
-                    className: `sidebar-overlay ${isOpen ? 'open' : ''}`,
-                    onClick: onClose
-                })
+                h('div', { className: `sidebar-overlay ${isOpen ? 'open' : ''}`, onClick: onClose })
             );
         }
 
-        function SettingsModal({ isOpen, onClose, settings, onSave, onTest, isConnected }) {
+        function SettingsModal({ isOpen, onClose, settings, onSave, isConnected }) {
             const [form, setForm] = React.useState(settings);
             const [testing, setTesting] = React.useState(false);
             const [testResult, setTestResult] = React.useState(null);
             const [models, setModels] = React.useState([]);
-
-            React.useEffect(() => {
-                if (isOpen) { setForm(settings);
-                    setTestResult(null);
-                    setModels([]); }
-            }, [isOpen, settings]);
-
-            const handleChange = (e) => {
-                const { name, value, type } = e.target;
-                setForm(prev => ({ ...prev, [name]: (type === 'number' || type === 'range') ? parseFloat(value) : value }));
-            };
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                onSave(form);
-                onClose();
-            };
-
+            React.useEffect(() => { if (isOpen) { setForm(settings); setTestResult(null); setModels([]); } }, [isOpen, settings]);
+            const handleChange = (e) => { const { name, value, type } = e.target; setForm(prev => ({ ...prev, [name]: (type === 'number' || type === 'range') ? parseFloat(value) : value })); };
+            const handleSubmit = (e) => { e.preventDefault(); onSave(form); onClose(); };
             const handleTest = async () => {
-                if (!form.apiUrl) return;
-                onSave(form);
-                setTesting(true);
-                setTestResult(null);
+                if (!form.apiUrl) return; onSave(form); setTesting(true); setTestResult(null);
                 try {
-                    const ok = await api.test(form.apiUrl);
-                    setTestResult(ok);
-                    if (ok) {
-                        const list = await api.listModels(form.apiUrl);
-                        setModels(list);
-                        // If the current model isn't in the list, default to the first.
-                        if (list.length && !list.includes(form.model)) {
-                            setForm(prev => ({ ...prev, model: list[0] }));
-                        }
-                    }
+                    const ok = await api.test(form.apiUrl); setTestResult(ok);
+                    if (ok) { const list = await api.listModels(form.apiUrl); setModels(list); if (list.length && !list.includes(form.model)) setForm(prev => ({ ...prev, model: list[0] })); }
                 } catch (_) { setTestResult(false); } finally { setTesting(false); }
             };
-
             if (!isOpen) return null;
-
-            return h('div', { className: 'fixed inset-0 bg-black/70 flex items-center justify-center z-[70] p-4 backdrop-blur-sm' },
-                h('div', { className: 'bg-[#1a1a1a] rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto border border-[#2a2a2a] shadow-2xl scroll-container' },
-                    h('div', { className: 'flex items-center justify-between p-4 border-b border-[#2a2a2a] safe-top' },
-                        h('h2', { className: 'text-xl font-bold text-white' }, 'Settings'),
-                        h('button', {
-                            onClick: onClose,
-                            className: 'text-gray-400 hover:text-white text-xl p-2 touch-target transition'
-                        }, h('i', { className: 'fas fa-times' }))
+            const label = 'block mono text-[11px] uppercase tracking-widest text-cyan-400/70 mb-1.5';
+            return h('div', { className: 'fixed inset-0 bg-black/75 flex items-center justify-center z-[70] p-4 backdrop-blur-sm' },
+                h('div', { className: 'hud-panel bracket rounded-xl max-w-lg w-full max-h-[92vh] overflow-y-auto scroll-container', style: { boxShadow: '0 0 40px rgba(34,211,238,0.12)' } },
+                    h('div', { className: 'flex items-center justify-between p-4 safe-top', style: { borderBottom: '1px solid var(--line)' } },
+                        h('h2', { className: 'display text-lg font-bold text-cyan-200 uppercase' }, 'System Config'),
+                        h('button', { onClick: onClose, className: 'icon-btn text-xl p-2 touch-target' }, h('i', { className: 'fas fa-times' }))
                     ),
                     h('form', { onSubmit: handleSubmit, className: 'p-4 space-y-4' },
                         h('div', null,
-                            h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' },
-                                'API URL ', h('span', { className: 'text-red-400' }, '*')
-                            ),
-                            h('input', {
-                                type: 'url',
-                                name: 'apiUrl',
-                                value: form.apiUrl || '',
-                                onChange: handleChange,
-                                placeholder: 'http://localhost:11434',
-                                className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition',
-                                required: true,
-                                inputMode: 'url',
-                                autoCapitalize: 'off',
-                                autoCorrect: 'off'
-                            }),
-                            h('p', { className: 'text-xs text-gray-500 mt-1.5' }, 'Base URL, no /v1 suffix — Ollama: :11434 · LM Studio: :1234')
+                            h('label', { className: label }, 'Endpoint URL ', h('span', { className: 'text-cyan-300' }, '*')),
+                            h('input', { type: 'url', name: 'apiUrl', value: form.apiUrl || '', onChange: handleChange, placeholder: 'http://localhost:11434', className: 'sci-input w-full rounded-lg px-4 py-3 text-sm', required: true, inputMode: 'url', autoCapitalize: 'off', autoCorrect: 'off' }),
+                            h('p', { className: 'mono text-[10px] text-cyan-600/50 mt-1.5' }, 'no /v1 suffix — ollama :11434 · lm studio :1234')
                         ),
                         h('div', { className: 'flex flex-wrap items-center gap-3' },
-                            h('button', {
-                                type: 'button',
-                                onClick: handleTest,
-                                disabled: testing || !form.apiUrl,
-                                className: 'px-4 py-2.5 bg-[#2a2a2a] hover:bg-[#3a3a3a] active:bg-[#3a3a3a] text-white rounded-lg text-sm transition touch-target disabled:opacity-50'
-                            }, testing ? 'Testing…' : 'Test Connection'),
-                            testResult !== null && h('span', { className: `text-sm ${testResult ? 'text-green-400' : 'text-red-400'}` },
-                                testResult ? '✅ Connected' : '❌ Failed'
-                            ),
-                            isConnected && h('span', { className: 'text-xs text-green-400/70 ml-auto' }, '● Online')
+                            h('button', { type: 'button', onClick: handleTest, disabled: testing || !form.apiUrl, className: 'neon-btn px-4 py-2.5 rounded-lg text-xs touch-target' }, testing ? 'Pinging…' : 'Test Link'),
+                            testResult !== null && h('span', { className: `mono text-xs uppercase tracking-wider ${testResult ? 'text-cyan-300' : 'text-red-400'}` }, testResult ? '◉ Connected' : '◯ Failed'),
+                            isConnected && h('span', { className: 'mono text-[10px] text-cyan-400/60 ml-auto' }, '● online')
                         ),
-                        h('hr', { className: 'border-[#2a2a2a]' }),
+                        h('hr', { style: { border: 'none', borderTop: '1px solid var(--line)' } }),
                         h('div', null,
-                            h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' }, 'Model Name'),
-                            // If Test found models, offer a dropdown; otherwise a free text box.
+                            h('label', { className: label }, 'Model Core'),
                             models.length > 0 ?
-                                h('select', {
-                                    name: 'model',
-                                    value: form.model || '',
-                                    onChange: handleChange,
-                                    className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition'
-                                }, models.map(m => h('option', { key: m, value: m }, m)))
+                                h('select', { name: 'model', value: form.model || '', onChange: handleChange, className: 'sci-input w-full rounded-lg px-4 py-3 text-sm' }, models.map(m => h('option', { key: m, value: m, style: { background: '#04060c' } }, m)))
                             :
-                                h('input', {
-                                    type: 'text',
-                                    name: 'model',
-                                    value: form.model || '',
-                                    onChange: handleChange,
-                                    placeholder: 'llama3.2',
-                                    className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition',
-                                    autoCapitalize: 'off',
-                                    autoCorrect: 'off'
-                                }),
-                            h('p', { className: 'text-xs text-gray-500 mt-1.5' }, 'e.g. llama3.2, gemma3, qwen2.5 — hit Test to list installed models')
+                                h('input', { type: 'text', name: 'model', value: form.model || '', onChange: handleChange, placeholder: 'llama3.2', className: 'sci-input w-full rounded-lg px-4 py-3 text-sm', autoCapitalize: 'off', autoCorrect: 'off' }),
+                            h('p', { className: 'mono text-[10px] text-cyan-600/50 mt-1.5' }, 'e.g. llama3.2, gemma3 — run Test Link to list cores')
                         ),
                         h('div', null,
-                            h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' },
-                                'Temperature: ', h('span', { className: 'text-blue-400' }, form.temperature ?? 0.7)
-                            ),
-                            h('input', {
-                                type: 'range',
-                                name: 'temperature',
-                                min: 0,
-                                max: 2,
-                                step: 0.05,
-                                value: form.temperature ?? 0.7,
-                                onChange: handleChange,
-                                className: 'w-full accent-blue-600 bg-[#2a2a2a] rounded-lg h-1.5'
-                            }),
-                            h('div', { className: 'flex justify-between text-xs text-gray-500' },
-                                h('span', null, 'Precise'),
-                                h('span', null, 'Creative')
-                            )
+                            h('label', { className: label }, 'Temperature ', h('span', { className: 'text-cyan-300' }, form.temperature ?? 0.7)),
+                            h('input', { type: 'range', name: 'temperature', min: 0, max: 2, step: 0.05, value: form.temperature ?? 0.7, onChange: handleChange, className: 'w-full accent-cyan-400' }),
+                            h('div', { className: 'flex justify-between mono text-[10px] text-cyan-600/50' }, h('span', null, 'PRECISE'), h('span', null, 'CHAOTIC'))
                         ),
                         h('div', null,
-                            h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' },
-                                'Max Tokens: ', h('span', { className: 'text-blue-400' }, form.maxTokens ?? 2048)
-                            ),
-                            h('input', {
-                                type: 'range',
-                                name: 'maxTokens',
-                                min: 256,
-                                max: 8192,
-                                step: 128,
-                                value: form.maxTokens ?? 2048,
-                                onChange: handleChange,
-                                className: 'w-full accent-blue-600 bg-[#2a2a2a] rounded-lg h-1.5'
-                            })
+                            h('label', { className: label }, 'Max Tokens ', h('span', { className: 'text-cyan-300' }, form.maxTokens ?? 2048)),
+                            h('input', { type: 'range', name: 'maxTokens', min: 256, max: 8192, step: 128, value: form.maxTokens ?? 2048, onChange: handleChange, className: 'w-full accent-cyan-400' })
                         ),
                         h('div', null,
-                            h('label', { className: 'block text-sm font-medium text-gray-300 mb-1.5' }, 'System Prompt'),
-                            h('textarea', {
-                                name: 'systemPrompt',
-                                value: form.systemPrompt || '',
-                                onChange: handleChange,
-                                rows: 3,
-                                placeholder: 'You are a helpful assistant.',
-                                className: 'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/60 focus:border-blue-600 transition resize-none'
-                            })
+                            h('label', { className: label }, 'System Directive'),
+                            h('textarea', { name: 'systemPrompt', value: form.systemPrompt || '', onChange: handleChange, rows: 3, placeholder: 'You are a helpful assistant.', className: 'sci-input w-full rounded-lg px-4 py-3 text-sm resize-none' })
                         ),
-                        h('div', { className: 'flex justify-end gap-3 pt-2 border-t border-[#2a2a2a]' },
-                            h('button', {
-                                type: 'button',
-                                onClick: onClose,
-                                className: 'px-5 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-[#2a2a2a] active:bg-[#2a2a2a] rounded-lg transition touch-target'
-                            }, 'Cancel'),
-                            h('button', {
-                                type: 'submit',
-                                className: 'px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-700 text-white text-sm font-medium rounded-lg transition shadow-lg shadow-blue-600/30 touch-target'
-                            }, 'Save Settings')
+                        h('div', { className: 'flex justify-end gap-3 pt-2', style: { borderTop: '1px solid var(--line)' } },
+                            h('button', { type: 'button', onClick: onClose, className: 'neon-btn px-5 py-2.5 rounded-lg text-sm touch-target' }, 'Cancel'),
+                            h('button', { type: 'submit', className: 'neon-primary px-5 py-2.5 rounded-lg text-sm touch-target' }, 'Save')
                         )
                     )
                 )
             );
         }
 
-        // ----- App -----
         function App() {
             const [sidebarOpen, setSidebarOpen] = React.useState(false);
             const [settingsOpen, setSettingsOpen] = React.useState(false);
             const [showClearConfirm, setShowClearConfirm] = React.useState(false);
-
             const {
-                conversations,
-                currentConversationId,
-                currentMessages,
-                isLoading,
-                isConnected,
-                settings,
-                createNewChat,
-                deleteConversation,
-                switchConversation,
-                sendMessage,
-                clearCurrentChat,
-                updateSettings,
-                testConnection,
-                getConversationTitle,
+                conversations, currentConversationId, currentMessages, isLoading, isConnected, settings,
+                createNewChat, deleteConversation, switchConversation, sendMessage, clearCurrentChat, updateSettings, getConversationTitle,
             } = useChat();
-
             const closeSidebar = () => setSidebarOpen(false);
+            const handleNewChat = () => { createNewChat(); closeSidebar(); };
+            const handleSwitchChat = (id) => { switchConversation(id); closeSidebar(); };
+            const handleDeleteChat = (id) => { deleteConversation(id); closeSidebar(); };
+            const handleClearChat = () => { if (currentMessages.length === 0) return; setShowClearConfirm(true); };
+            const confirmClear = () => { clearCurrentChat(); setShowClearConfirm(false); };
 
-            const handleNewChat = () => { createNewChat();
-                closeSidebar(); };
-            const handleSwitchChat = (id) => { switchConversation(id);
-                closeSidebar(); };
-            const handleDeleteChat = (id) => { deleteConversation(id);
-                closeSidebar(); };
-            const handleClearChat = () => {
-                if (currentMessages.length === 0) return;
-                setShowClearConfirm(true);
-            };
-            const confirmClear = () => { clearCurrentChat();
-                setShowClearConfirm(false); };
-
-            return h('div', { className: 'flex h-screen w-screen bg-[#0d0d0d] text-gray-200 overflow-hidden' },
-                h(Sidebar, {
-                    conversations,
-                    currentId: currentConversationId,
-                    onNewChat: handleNewChat,
-                    onSwitchChat: handleSwitchChat,
-                    onDeleteChat: handleDeleteChat,
-                    onOpenSettings: () => setSettingsOpen(true),
-                    isOpen: sidebarOpen,
-                    onClose: closeSidebar
-                }),
-                h('div', { className: 'flex-1 flex flex-col min-w-0 bg-[#141414] relative' },
-                    h('header', { className: 'app-header flex items-center justify-between px-3 sm:px-4 py-2.5 border-b border-[#2a2a2a] bg-[#141414] shrink-0 safe-top' },
+            return h('div', { className: 'flex h-screen w-screen overflow-hidden' },
+                h(Sidebar, { conversations, currentId: currentConversationId, onNewChat: handleNewChat, onSwitchChat: handleSwitchChat, onDeleteChat: handleDeleteChat, onOpenSettings: () => setSettingsOpen(true), isOpen: sidebarOpen, onClose: closeSidebar }),
+                h('div', { className: 'flex-1 flex flex-col min-w-0 relative' },
+                    h('header', { className: 'app-header hud-bar flex items-center justify-between px-3 sm:px-4 py-2.5 shrink-0 safe-top' },
                         h('div', { className: 'flex items-center gap-2.5 min-w-0' },
-                            h('button', {
-                                onClick: () => setSidebarOpen(true),
-                                className: 'md:hidden text-gray-400 hover:text-white p-2 touch-target transition'
-                            }, h('i', { className: 'fas fa-bars text-lg' })),
-                            h('h1', { className: 'text-base sm:text-lg font-semibold text-white truncate' },
-                                currentConversationId ? getConversationTitle(currentConversationId) : 'AI Chatbox'
+                            h('button', { onClick: () => setSidebarOpen(true), className: 'md:hidden icon-btn p-2 touch-target' }, h('i', { className: 'fas fa-bars text-lg' })),
+                            h('div', { className: 'min-w-0' },
+                                h('h1', { className: 'display text-sm sm:text-base font-bold text-cyan-100 truncate uppercase' }, currentConversationId ? getConversationTitle(currentConversationId) : 'NEURA'),
+                                h('div', { className: 'mono text-[9px] uppercase tracking-widest text-cyan-500/50 truncate' }, settings.model)
                             )
                         ),
-                        h('div', { className: 'flex items-center gap-1.5 sm:gap-3' },
+                        h('div', { className: 'flex items-center gap-2 sm:gap-3' },
                             h(StatusIndicator, { connected: isConnected }),
-                            h('button', {
-                                onClick: handleClearChat,
-                                className: 'text-gray-400 hover:text-white p-2 touch-target transition rounded-lg hover:bg-[#2a2a2a] active:bg-[#2a2a2a]',
-                                disabled: currentMessages.length === 0,
-                                'aria-label': 'Clear chat'
-                            }, h('i', { className: 'fas fa-eraser text-sm' })),
-                            h('button', {
-                                onClick: () => setSettingsOpen(true),
-                                className: 'text-gray-400 hover:text-white p-2 touch-target transition rounded-lg hover:bg-[#2a2a2a] active:bg-[#2a2a2a]',
-                                'aria-label': 'Settings'
-                            }, h('i', { className: 'fas fa-sliders-h text-sm' }))
+                            h('button', { onClick: handleClearChat, className: 'icon-btn p-2 touch-target rounded-lg', disabled: currentMessages.length === 0, 'aria-label': 'Clear' }, h('i', { className: 'fas fa-eraser text-sm' })),
+                            h('button', { onClick: () => setSettingsOpen(true), className: 'icon-btn p-2 touch-target rounded-lg', 'aria-label': 'Settings' }, h('i', { className: 'fas fa-sliders-h text-sm' }))
                         )
                     ),
                     h(MessageList, { messages: currentMessages, isLoading }),
                     h(ChatInput, { onSend: sendMessage, disabled: isLoading || !isConnected }),
-                    showClearConfirm && h('div', { className: 'absolute inset-0 bg-black/60 flex items-center justify-center z-50 p-4' },
-                        h('div', { className: 'bg-[#1e1e1e] rounded-xl p-5 max-w-sm w-full border border-[#2a2a2a] shadow-2xl' },
-                            h('h3', { className: 'text-lg font-semibold text-white mb-2' }, 'Clear chat?'),
-                            h('p', { className: 'text-gray-400 text-sm mb-5' }, 'This will remove all messages in the current conversation.'),
+                    showClearConfirm && h('div', { className: 'absolute inset-0 bg-black/65 flex items-center justify-center z-50 p-4 backdrop-blur-sm' },
+                        h('div', { className: 'hud-panel rounded-xl p-5 max-w-sm w-full', style: { boxShadow: '0 0 30px rgba(34,211,238,0.12)' } },
+                            h('h3', { className: 'display text-base font-bold text-cyan-200 mb-2 uppercase' }, 'Purge Channel?'),
+                            h('p', { className: 'mono text-xs text-cyan-500/60 mb-5' }, '// all packets in this channel will be erased'),
                             h('div', { className: 'flex justify-end gap-3' },
-                                h('button', {
-                                    onClick: () => setShowClearConfirm(false),
-                                    className: 'px-4 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-[#2a2a2a] active:bg-[#2a2a2a] transition touch-target'
-                                }, 'Cancel'),
-                                h('button', {
-                                    onClick: confirmClear,
-                                    className: 'px-4 py-2.5 rounded-lg text-sm bg-red-600 hover:bg-red-700 active:bg-red-700 text-white transition touch-target'
-                                }, 'Clear')
+                                h('button', { onClick: () => setShowClearConfirm(false), className: 'neon-btn px-4 py-2.5 rounded-lg text-sm touch-target' }, 'Cancel'),
+                                h('button', { onClick: confirmClear, className: 'px-4 py-2.5 rounded-lg text-sm touch-target mono uppercase tracking-wider', style: { border: '1px solid rgba(239,68,68,0.5)', color: '#fca5a5', background: 'rgba(239,68,68,0.12)' } }, 'Purge')
                             )
                         )
                     )
                 ),
-                h(SettingsModal, {
-                    isOpen: settingsOpen,
-                    onClose: () => setSettingsOpen(false),
-                    settings,
-                    onSave: updateSettings,
-                    onTest: testConnection,
-                    isConnected
-                })
+                h(SettingsModal, { isOpen: settingsOpen, onClose: () => setSettingsOpen(false), settings, onSave: updateSettings, isConnected })
             );
         }
 
-        // ----- mount -----
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(h(React.StrictMode, null, h(App)));
     </script>
